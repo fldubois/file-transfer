@@ -1,0 +1,24 @@
+{
+  "name": "file-transfer",
+  "version": "0.0.0",
+  "description": "Multiprotocol file transfer",
+  "author": "Florent Dubois <florent.dubois@devaddict.io>",
+  "license": "MIT",
+  "keywords": [
+    "file",
+    "fs",
+    "transfer",
+    "upload",
+    "download"
+  ],
+  "homepage": "https://github.com/fldubois/file-transfer#readme",
+  "bugs": "https://github.com/fldubois/file-transfer/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fldubois/file-transfer.git"
+  },
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
