@@ -17,8 +17,11 @@
     "type": "git",
     "url": "git+https://github.com/fldubois/file-transfer.git"
   },
-  "main": "index.js",
+  "main": "lib/file-transfer.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "ssh2": "^0.5.2"
   }
 }
