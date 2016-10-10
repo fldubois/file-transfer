@@ -19,9 +19,13 @@
   },
   "main": "lib/file-transfer.js",
   "scripts": {
+    "lint": "eslint lib",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
     "ssh2": "^0.5.2"
+  },
+  "devDependencies": {
+    "eslint": "^2.13.1"
   }
 }
