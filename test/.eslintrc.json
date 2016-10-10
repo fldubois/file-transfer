@@ -1,0 +1,12 @@
+{
+  "env": {
+    "mocha": true
+  },
+  "rules": {
+
+    // Stylistic Issues
+
+    // require or disallow padding within blocks
+    "padded-blocks": "off"
+  }
+}

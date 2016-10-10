@@ -19,13 +19,18 @@
   },
   "main": "lib/file-transfer.js",
   "scripts": {
-    "lint": "eslint lib",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint": "eslint lib test",
+    "test": "istanbul cover --root 'lib' --include-all-sources true _mocha -- --recursive test/specs"
   },
   "dependencies": {
     "ssh2": "^0.5.2"
   },
   "devDependencies": {
-    "eslint": "^2.13.1"
+    "chai": "^3.5.0",
+    "eslint": "^2.13.1",
+    "istanbul": "^0.4.5",
+    "mocha": "^3.1.1",
+    "proxyquire": "^1.7.10",
+    "sinon": "^1.17.6"
   }
 }
