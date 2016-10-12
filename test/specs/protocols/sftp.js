@@ -149,6 +149,60 @@ describe('protocols/sftp', function () {
 
   });
 
+  describe('createWriteStream()', function () {
+
+    it('should create a readable stream from the SFTP connection', function (done) {
+      var sftp  = new SFTPClient({});
+
+      sftp.once('ready', function () {
+        var path    = '/path/to/file';
+        var options = {test: true};
+
+        sftp.createWriteStream(path, options);
+
+        var spy = sftp.sftp.createWriteStream;
+
+        expect(spy.calledOnce).to.equal(true, 'should call createWriteStream() on ssh2 client');
+        expect(spy.calledWith(path, options)).to.equal(true, 'should pass path and options');
+
+        return done();
+      });
+
+      sftp.once('error', function (error) {
+        return done(error);
+      });
+
+      sftp.connect();
+    });
+
+    it('should ignore the `handle` option', function (done) {
+      var sftp  = new SFTPClient({});
+
+      sftp.once('ready', function () {
+        var path    = '/path/to/file';
+        var options = {
+          test:   true,
+          handle: 0
+        };
+
+        sftp.createWriteStream(path, options);
+
+        var spy = sftp.sftp.createWriteStream;
+
+        expect(spy.calledWith(path, {test: true})).to.equal(true, 'should remove handle from options');
+
+        return done();
+      });
+
+      sftp.once('error', function (error) {
+        return done(error);
+      });
+
+      sftp.connect();
+    });
+
+  });
+
   describe('disconnect()', function () {
 
     it('should close the SSH connection', function (done) {

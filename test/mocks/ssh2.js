@@ -11,9 +11,14 @@ var errors = {};
 
 function SFTPStreamMock() {
   sinon.spy(this, 'createReadStream');
+  sinon.spy(this, 'createWriteStream');
 }
 
 SFTPStreamMock.prototype.createReadStream = function () {
+  return null;
+};
+
+SFTPStreamMock.prototype.createWriteStream = function () {
   return null;
 };
 
