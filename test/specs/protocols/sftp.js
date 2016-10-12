@@ -6,7 +6,7 @@ var proxyquire = require('proxyquire').noCallThru();
 var ssh2 = require('../../mocks/ssh2');
 
 var SFTPClient = proxyquire('../../../lib/protocols/sftp', {
-  'ssh2': ssh2
+  ssh2: ssh2
 });
 
 describe('protocols/sftp', function () {
@@ -25,7 +25,7 @@ describe('protocols/sftp', function () {
 
     it('should open a SFTP connection', function (done) {
       var options = {
-        hostname: 'localhost',
+        host: 'localhost',
         port: -1
       };
 
@@ -91,6 +91,60 @@ describe('protocols/sftp', function () {
 
     after(function () {
       ssh2.clear();
+    });
+
+  });
+
+  describe('createReadStream()', function () {
+
+    it('should create a readable stream from the SFTP connection', function (done) {
+      var sftp  = new SFTPClient({});
+
+      sftp.once('ready', function () {
+        var path    = '/path/to/file';
+        var options = {test: true};
+
+        sftp.createReadStream(path, options);
+
+        var spy = sftp.sftp.createReadStream;
+
+        expect(spy.calledOnce).to.equal(true, 'should call createReadStream() on ssh2 client');
+        expect(spy.calledWith(path, options)).to.equal(true, 'should pass path and options');
+
+        return done();
+      });
+
+      sftp.once('error', function (error) {
+        return done(error);
+      });
+
+      sftp.connect();
+    });
+
+    it('should ignore the `handle` option', function (done) {
+      var sftp  = new SFTPClient({});
+
+      sftp.once('ready', function () {
+        var path    = '/path/to/file';
+        var options = {
+          test:   true,
+          handle: 0
+        };
+
+        sftp.createReadStream(path, options);
+
+        var spy = sftp.sftp.createReadStream;
+
+        expect(spy.calledWith(path, {test: true})).to.equal(true, 'should remove handle from options');
+
+        return done();
+      });
+
+      sftp.once('error', function (error) {
+        return done(error);
+      });
+
+      sftp.connect();
     });
 
   });
