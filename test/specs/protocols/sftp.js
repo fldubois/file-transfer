@@ -203,6 +203,68 @@ describe('protocols/sftp', function () {
 
   });
 
+  describe('readdir()', function () {
+
+    it('should return a list of filenames', function (done) {
+      var sftp  = new SFTPClient({});
+
+      sftp.once('ready', function () {
+        var path = '/path/to/file';
+
+        sftp.readdir(path, function (error, files) {
+          if (error) {
+            return done(error);
+          }
+
+          var spy = sftp.sftp.readdir;
+
+          expect(spy.calledOnce).to.equal(true, 'should call readdir() on ssh2 client');
+          expect(spy.calledWith(path)).to.equal(true, 'should pass path');
+
+          expect(files).to.be.an('array');
+          expect(files.length).to.equal(6);
+
+          files.forEach(function (file) {
+            expect(file).to.match(/file\d/);
+          });
+
+          return done();
+        });
+      });
+
+      sftp.once('error', function (error) {
+        return done(error);
+      });
+
+      sftp.connect();
+    });
+
+    it('should transmit errors', function (done) {
+      var sftp  = new SFTPClient({});
+      var error = new Error('Fake readdir() error');
+
+      ssh2.setError('readdir', error);
+
+      sftp.once('ready', function () {
+        var path = '/path/to/file';
+
+        sftp.readdir(path, function (err, files) {
+          expect(err).to.equal(error);
+          expect(files).to.be.a('undefined');
+
+          return done();
+        });
+      });
+
+      sftp.once('error', function (err) {
+        return done(err);
+      });
+
+      sftp.connect();
+    });
+
+  });
+
   describe('disconnect()', function () {
 
     it('should close the SSH connection', function (done) {

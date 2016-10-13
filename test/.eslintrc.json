@@ -4,7 +4,15 @@
   },
   "rules": {
 
+    // Best Practices
+
+    // disallow magic numbers
+    "no-magic-numbers": "off",
+
     // Stylistic Issues
+
+    // enforce a maximum depth that callbacks can be nested
+    "max-nested-callbacks": ["error", 6],
 
     // require or disallow padding within blocks
     "padded-blocks": "off"
