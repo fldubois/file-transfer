@@ -265,6 +265,60 @@ describe('protocols/sftp', function () {
 
   });
 
+  describe('unlink()', function () {
+
+    it('should delete the file via the SFTP connection', function (done) {
+      var sftp  = new SFTPClient({});
+
+      sftp.once('ready', function () {
+        var path = '/path/to/file';
+
+        sftp.unlink(path, function (error) {
+          if (error) {
+            return done(error);
+          }
+
+          var spy = sftp.sftp.unlink;
+
+          expect(spy.calledOnce).to.equal(true, 'should call unlink() on ssh2 client');
+          expect(spy.calledWith(path)).to.equal(true, 'should pass parameters');
+
+          return done();
+        });
+      });
+
+      sftp.once('error', function (error) {
+        return done(error);
+      });
+
+      sftp.connect();
+    });
+
+    it('should transmit errors', function (done) {
+      var sftp  = new SFTPClient({});
+      var error = new Error('Fake unlink() error');
+
+      ssh2.setError('unlink', error);
+
+      sftp.once('ready', function () {
+        var path = '/path/to/file';
+
+        sftp.unlink(path, function (err) {
+          expect(err).to.equal(error);
+
+          return done();
+        });
+      });
+
+      sftp.once('error', function (err) {
+        return done(err);
+      });
+
+      sftp.connect();
+    });
+
+  });
+
   describe('disconnect()', function () {
 
     it('should close the SSH connection', function (done) {

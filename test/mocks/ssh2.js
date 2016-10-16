@@ -13,6 +13,7 @@ function SFTPStreamMock() {
   sinon.spy(this, 'createReadStream');
   sinon.spy(this, 'createWriteStream');
   sinon.spy(this, 'readdir');
+  sinon.spy(this, 'unlink');
 }
 
 SFTPStreamMock.prototype.createReadStream = function () {
@@ -36,6 +37,10 @@ SFTPStreamMock.prototype.readdir = function (path, callback) {
     {filename: 'file5'},
     {filename: 'file6'}
   ]);
+};
+
+SFTPStreamMock.prototype.unlink = function (path, callback) {
+  return errors.hasOwnProperty('unlink') ? callback(errors.unlink) : callback(null);
 };
 
 /* ssh2 Client mock */
