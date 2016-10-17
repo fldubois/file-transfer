@@ -14,6 +14,7 @@ function SFTPStreamMock() {
   sinon.spy(this, 'createWriteStream');
   sinon.spy(this, 'mkdir');
   sinon.spy(this, 'readdir');
+  sinon.spy(this, 'rmdir');
   sinon.spy(this, 'unlink');
 }
 
@@ -47,6 +48,10 @@ SFTPStreamMock.prototype.readdir = function (path, callback) {
     {filename: 'file5'},
     {filename: 'file6'}
   ]);
+};
+
+SFTPStreamMock.prototype.rmdir = function (path, callback) {
+  return errors.hasOwnProperty('rmdir') ? callback(errors.rmdir) : callback(null);
 };
 
 SFTPStreamMock.prototype.unlink = function (path, callback) {

@@ -346,6 +346,60 @@ describe('protocols/sftp', function () {
 
   });
 
+  describe('rmdir()', function () {
+
+    it('should create a directory via the SFTP connection', function (done) {
+      var sftp  = new SFTPClient({});
+
+      sftp.once('ready', function () {
+        var path = '/path/to/directory';
+
+        sftp.rmdir(path, function (error) {
+          if (error) {
+            return done(error);
+          }
+
+          var spy = sftp.sftp.rmdir;
+
+          expect(spy.calledOnce).to.equal(true, 'should call rmdir() on ssh2 client');
+          expect(spy.calledWith(path)).to.equal(true, 'should pass path');
+
+          return done();
+        });
+      });
+
+      sftp.once('error', function (error) {
+        return done(error);
+      });
+
+      sftp.connect();
+    });
+
+    it('should transmit errors', function (done) {
+      var sftp  = new SFTPClient({});
+      var error = new Error('Fake rmdir() error');
+
+      ssh2.setError('rmdir', error);
+
+      sftp.once('ready', function () {
+        var path = '/path/to/directory';
+
+        sftp.rmdir(path, function (err) {
+          expect(err).to.equal(error);
+
+          return done();
+        });
+      });
+
+      sftp.once('error', function (err) {
+        return done(err);
+      });
+
+      sftp.connect();
+    });
+
+  });
+
   describe('unlink()', function () {
 
     it('should delete the file via the SFTP connection', function (done) {
