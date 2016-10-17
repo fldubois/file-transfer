@@ -203,6 +203,87 @@ describe('protocols/sftp', function () {
 
   });
 
+  describe('mkdir()', function () {
+
+    it('should create a directory via the SFTP connection', function (done) {
+      var sftp  = new SFTPClient({});
+
+      sftp.once('ready', function () {
+        var path = '/path/to/directory';
+
+        sftp.mkdir(path, function (error) {
+          if (error) {
+            return done(error);
+          }
+
+          var spy = sftp.sftp.mkdir;
+
+          expect(spy.calledOnce).to.equal(true, 'should call mkdir() on ssh2 client');
+          expect(spy.calledWith(path)).to.equal(true, 'should pass path');
+
+          return done();
+        });
+      });
+
+      sftp.once('error', function (error) {
+        return done(error);
+      });
+
+      sftp.connect();
+    });
+
+    it('should accept `mode` parameter', function (done) {
+      var sftp  = new SFTPClient({});
+
+      sftp.once('ready', function () {
+        var path = '/path/to/directory';
+
+        sftp.mkdir(path, '0775', function (error) {
+          if (error) {
+            return done(error);
+          }
+
+          var spy = sftp.sftp.mkdir;
+
+          expect(spy.calledOnce).to.equal(true, 'should call mkdir() on ssh2 client');
+          expect(spy.calledWith(path, {mode: '0775'})).to.equal(true, 'should pass path and mode');
+
+          return done();
+        });
+      });
+
+      sftp.once('error', function (error) {
+        return done(error);
+      });
+
+      sftp.connect();
+    });
+
+    it('should transmit errors', function (done) {
+      var sftp  = new SFTPClient({});
+      var error = new Error('Fake mkdir() error');
+
+      ssh2.setError('mkdir', error);
+
+      sftp.once('ready', function () {
+        var path = '/path/to/directory';
+
+        sftp.mkdir(path, function (err) {
+          expect(err).to.equal(error);
+
+          return done();
+        });
+      });
+
+      sftp.once('error', function (err) {
+        return done(err);
+      });
+
+      sftp.connect();
+    });
+
+  });
+
   describe('readdir()', function () {
 
     it('should return a list of filenames', function (done) {

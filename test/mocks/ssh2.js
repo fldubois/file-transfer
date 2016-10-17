@@ -12,6 +12,7 @@ var errors = {};
 function SFTPStreamMock() {
   sinon.spy(this, 'createReadStream');
   sinon.spy(this, 'createWriteStream');
+  sinon.spy(this, 'mkdir');
   sinon.spy(this, 'readdir');
   sinon.spy(this, 'unlink');
 }
@@ -22,6 +23,15 @@ SFTPStreamMock.prototype.createReadStream = function () {
 
 SFTPStreamMock.prototype.createWriteStream = function () {
   return null;
+};
+
+SFTPStreamMock.prototype.mkdir = function (path, mode, callback) {
+  if (typeof mode === 'function') {
+    callback = mode;
+    mode     = null;
+  }
+
+  return errors.hasOwnProperty('mkdir') ? callback(errors.mkdir) : callback(null);
 };
 
 SFTPStreamMock.prototype.readdir = function (path, callback) {
