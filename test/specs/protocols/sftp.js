@@ -9,6 +9,20 @@ var SFTPClient = proxyquire('../../../lib/protocols/sftp', {
   ssh2: ssh2
 });
 
+function createClient(callback) {
+  var sftp  = new SFTPClient({});
+
+  sftp.once('ready', function () {
+    return callback(null, sftp);
+  });
+
+  sftp.once('error', function (error) {
+    return callback(error);
+  });
+
+  sftp.connect();
+}
+
 describe('protocols/sftp', function () {
 
   it('should expose common client interface', function () {
@@ -98,9 +112,11 @@ describe('protocols/sftp', function () {
   describe('createReadStream()', function () {
 
     it('should create a readable stream from the SFTP connection', function (done) {
-      var sftp  = new SFTPClient({});
+      createClient(function (error, sftp) {
+        if (error) {
+          return done(error);
+        }
 
-      sftp.once('ready', function () {
         var path    = '/path/to/file';
         var options = {test: true};
 
@@ -113,23 +129,16 @@ describe('protocols/sftp', function () {
 
         return done();
       });
-
-      sftp.once('error', function (error) {
-        return done(error);
-      });
-
-      sftp.connect();
     });
 
     it('should ignore the `handle` option', function (done) {
-      var sftp  = new SFTPClient({});
+      createClient(function (error, sftp) {
+        if (error) {
+          return done(error);
+        }
 
-      sftp.once('ready', function () {
         var path    = '/path/to/file';
-        var options = {
-          test:   true,
-          handle: 0
-        };
+        var options = {test: true, handle: 0};
 
         sftp.createReadStream(path, options);
 
@@ -139,12 +148,6 @@ describe('protocols/sftp', function () {
 
         return done();
       });
-
-      sftp.once('error', function (error) {
-        return done(error);
-      });
-
-      sftp.connect();
     });
 
   });
@@ -152,9 +155,11 @@ describe('protocols/sftp', function () {
   describe('createWriteStream()', function () {
 
     it('should create a readable stream from the SFTP connection', function (done) {
-      var sftp  = new SFTPClient({});
+      createClient(function (error, sftp) {
+        if (error) {
+          return done(error);
+        }
 
-      sftp.once('ready', function () {
         var path    = '/path/to/file';
         var options = {test: true};
 
@@ -167,23 +172,16 @@ describe('protocols/sftp', function () {
 
         return done();
       });
-
-      sftp.once('error', function (error) {
-        return done(error);
-      });
-
-      sftp.connect();
     });
 
     it('should ignore the `handle` option', function (done) {
-      var sftp  = new SFTPClient({});
+      createClient(function (error, sftp) {
+        if (error) {
+          return done(error);
+        }
 
-      sftp.once('ready', function () {
         var path    = '/path/to/file';
-        var options = {
-          test:   true,
-          handle: 0
-        };
+        var options = {test: true, handle: 0};
 
         sftp.createWriteStream(path, options);
 
@@ -193,12 +191,6 @@ describe('protocols/sftp', function () {
 
         return done();
       });
-
-      sftp.once('error', function (error) {
-        return done(error);
-      });
-
-      sftp.connect();
     });
 
   });
@@ -206,9 +198,11 @@ describe('protocols/sftp', function () {
   describe('mkdir()', function () {
 
     it('should create a directory via the SFTP connection', function (done) {
-      var sftp  = new SFTPClient({});
+      createClient(function (error, sftp) {
+        if (error) {
+          return done(error);
+        }
 
-      sftp.once('ready', function () {
         var path = '/path/to/directory';
 
         sftp.mkdir(path, function (error) {
@@ -224,18 +218,14 @@ describe('protocols/sftp', function () {
           return done();
         });
       });
-
-      sftp.once('error', function (error) {
-        return done(error);
-      });
-
-      sftp.connect();
     });
 
     it('should accept `mode` parameter', function (done) {
-      var sftp  = new SFTPClient({});
+      createClient(function (error, sftp) {
+        if (error) {
+          return done(error);
+        }
 
-      sftp.once('ready', function () {
         var path = '/path/to/directory';
 
         sftp.mkdir(path, '0775', function (error) {
@@ -251,35 +241,24 @@ describe('protocols/sftp', function () {
           return done();
         });
       });
-
-      sftp.once('error', function (error) {
-        return done(error);
-      });
-
-      sftp.connect();
     });
 
     it('should transmit errors', function (done) {
-      var sftp  = new SFTPClient({});
-      var error = new Error('Fake mkdir() error');
+      createClient(function (error, sftp) {
+        if (error) {
+          return done(error);
+        }
 
-      ssh2.setError('mkdir', error);
+        var error = new Error('Fake mkdir() error');
 
-      sftp.once('ready', function () {
-        var path = '/path/to/directory';
+        ssh2.setError('mkdir', error);
 
-        sftp.mkdir(path, function (err) {
+        sftp.mkdir('/path/to/directory', function (err) {
           expect(err).to.equal(error);
 
           return done();
         });
       });
-
-      sftp.once('error', function (err) {
-        return done(err);
-      });
-
-      sftp.connect();
     });
 
   });
@@ -287,9 +266,11 @@ describe('protocols/sftp', function () {
   describe('readdir()', function () {
 
     it('should return a list of filenames', function (done) {
-      var sftp  = new SFTPClient({});
+      createClient(function (error, sftp) {
+        if (error) {
+          return done(error);
+        }
 
-      sftp.once('ready', function () {
         var path = '/path/to/file';
 
         sftp.readdir(path, function (error, files) {
@@ -312,36 +293,25 @@ describe('protocols/sftp', function () {
           return done();
         });
       });
-
-      sftp.once('error', function (error) {
-        return done(error);
-      });
-
-      sftp.connect();
     });
 
     it('should transmit errors', function (done) {
-      var sftp  = new SFTPClient({});
-      var error = new Error('Fake readdir() error');
+      createClient(function (error, sftp) {
+        if (error) {
+          return done(error);
+        }
 
-      ssh2.setError('readdir', error);
+        var error = new Error('Fake readdir() error');
 
-      sftp.once('ready', function () {
-        var path = '/path/to/file';
+        ssh2.setError('readdir', error);
 
-        sftp.readdir(path, function (err, files) {
+        sftp.readdir('/path/to/file', function (err, files) {
           expect(err).to.equal(error);
           expect(files).to.be.a('undefined');
 
           return done();
         });
       });
-
-      sftp.once('error', function (err) {
-        return done(err);
-      });
-
-      sftp.connect();
     });
 
   });
@@ -349,9 +319,11 @@ describe('protocols/sftp', function () {
   describe('rmdir()', function () {
 
     it('should create a directory via the SFTP connection', function (done) {
-      var sftp  = new SFTPClient({});
+      createClient(function (error, sftp) {
+        if (error) {
+          return done(error);
+        }
 
-      sftp.once('ready', function () {
         var path = '/path/to/directory';
 
         sftp.rmdir(path, function (error) {
@@ -367,35 +339,24 @@ describe('protocols/sftp', function () {
           return done();
         });
       });
-
-      sftp.once('error', function (error) {
-        return done(error);
-      });
-
-      sftp.connect();
     });
 
     it('should transmit errors', function (done) {
-      var sftp  = new SFTPClient({});
-      var error = new Error('Fake rmdir() error');
+      createClient(function (error, sftp) {
+        if (error) {
+          return done(error);
+        }
 
-      ssh2.setError('rmdir', error);
+        var error = new Error('Fake rmdir() error');
 
-      sftp.once('ready', function () {
-        var path = '/path/to/directory';
+        ssh2.setError('rmdir', error);
 
-        sftp.rmdir(path, function (err) {
+        sftp.rmdir('/path/to/directory', function (err) {
           expect(err).to.equal(error);
 
           return done();
         });
       });
-
-      sftp.once('error', function (err) {
-        return done(err);
-      });
-
-      sftp.connect();
     });
 
   });
@@ -403,9 +364,11 @@ describe('protocols/sftp', function () {
   describe('unlink()', function () {
 
     it('should delete the file via the SFTP connection', function (done) {
-      var sftp  = new SFTPClient({});
+      createClient(function (error, sftp) {
+        if (error) {
+          return done(error);
+        }
 
-      sftp.once('ready', function () {
         var path = '/path/to/file';
 
         sftp.unlink(path, function (error) {
@@ -421,35 +384,24 @@ describe('protocols/sftp', function () {
           return done();
         });
       });
-
-      sftp.once('error', function (error) {
-        return done(error);
-      });
-
-      sftp.connect();
     });
 
     it('should transmit errors', function (done) {
-      var sftp  = new SFTPClient({});
-      var error = new Error('Fake unlink() error');
+      createClient(function (error, sftp) {
+        if (error) {
+          return done(error);
+        }
 
-      ssh2.setError('unlink', error);
+        var error = new Error('Fake unlink() error');
 
-      sftp.once('ready', function () {
-        var path = '/path/to/file';
+        ssh2.setError('unlink', error);
 
-        sftp.unlink(path, function (err) {
+        sftp.unlink('/path/to/file', function (err) {
           expect(err).to.equal(error);
 
           return done();
         });
       });
-
-      sftp.once('error', function (err) {
-        return done(err);
-      });
-
-      sftp.connect();
     });
 
   });
@@ -457,9 +409,11 @@ describe('protocols/sftp', function () {
   describe('disconnect()', function () {
 
     it('should close the SSH connection', function (done) {
-      var sftp  = new SFTPClient({});
+      createClient(function (error, sftp) {
+        if (error) {
+          return done(error);
+        }
 
-      sftp.once('ready', function () {
         expect(sftp.client.end.calledOnce).to.equal(false, 'should not call end() on ssh2 client at connection');
 
         sftp.disconnect();
@@ -468,12 +422,6 @@ describe('protocols/sftp', function () {
 
         return done();
       });
-
-      sftp.once('error', function (error) {
-        return done(error);
-      });
-
-      sftp.connect();
     });
 
   });
