@@ -46,6 +46,8 @@ describe('protocols/sftp', function () {
       var sftp = new SFTPClient(options);
 
       sftp.once('ready', function () {
+        expect(sftp.connected).to.equal(true);
+
         expect(sftp.client).to.be.an.instanceOf(ssh2.Client, 'should create a new ssh2 client');
 
         expect(sftp.client.connect.calledOnce).to.equal(true, 'should call connect() on ssh2 client');
@@ -74,6 +76,8 @@ describe('protocols/sftp', function () {
       });
 
       sftp.once('error', function (err) {
+        expect(sftp.connected).to.equal(false);
+
         expect(err).to.equal(error);
 
         return done();
@@ -93,6 +97,8 @@ describe('protocols/sftp', function () {
       });
 
       sftp.once('error', function (err) {
+        expect(sftp.connected).to.equal(false);
+
         expect(err).to.equal(error);
 
         expect(sftp.client.end.calledOnce).to.equal(true, 'should call end() on ssh2 client');
@@ -150,6 +156,14 @@ describe('protocols/sftp', function () {
       });
     });
 
+    it('should throw an error if the client is not connected', function () {
+      var client = new SFTPClient({});
+
+      expect(function () {
+        client.createReadStream('/path/to/file');
+      }).to.throw('SFTP client not connected');
+    });
+
   });
 
   describe('createWriteStream()', function () {
@@ -191,6 +205,14 @@ describe('protocols/sftp', function () {
 
         return done();
       });
+    });
+
+    it('should throw an error if the client is not connected', function () {
+      var client = new SFTPClient({});
+
+      expect(function () {
+        client.createWriteStream('/path/to/file');
+      }).to.throw('SFTP client not connected');
     });
 
   });
@@ -249,15 +271,26 @@ describe('protocols/sftp', function () {
           return done(error);
         }
 
-        var error = new Error('Fake mkdir() error');
+        var fakeError = new Error('Fake mkdir() error');
 
-        ssh2.setError('mkdir', error);
+        ssh2.setError('mkdir', fakeError);
 
         sftp.mkdir('/path/to/directory', function (err) {
-          expect(err).to.equal(error);
+          expect(err).to.equal(fakeError);
 
           return done();
         });
+      });
+    });
+
+    it('should fail if the client is not connected', function (done) {
+      var client = new SFTPClient({});
+
+      client.mkdir('/path/to/directory', function (err) {
+        expect(err).to.be.an('error');
+        expect(err.message).to.equal('SFTP client not connected');
+
+        return done();
       });
     });
 
@@ -271,7 +304,7 @@ describe('protocols/sftp', function () {
           return done(error);
         }
 
-        var path = '/path/to/file';
+        var path = '/path/to/directory';
 
         sftp.readdir(path, function (error, files) {
           if (error) {
@@ -301,16 +334,29 @@ describe('protocols/sftp', function () {
           return done(error);
         }
 
-        var error = new Error('Fake readdir() error');
+        var fakeError = new Error('Fake readdir() error');
 
-        ssh2.setError('readdir', error);
+        ssh2.setError('readdir', fakeError);
 
-        sftp.readdir('/path/to/file', function (err, files) {
-          expect(err).to.equal(error);
+        sftp.readdir('/path/to/directory', function (err, files) {
+          expect(err).to.equal(fakeError);
           expect(files).to.be.a('undefined');
 
           return done();
         });
+      });
+    });
+
+    it('should fail if the client is not connected', function (done) {
+      var client = new SFTPClient({});
+
+      client.readdir('/path/to/directory', function (err, files) {
+        expect(err).to.be.an('error');
+        expect(err.message).to.equal('SFTP client not connected');
+
+        expect(files).to.be.a('undefined');
+
+        return done();
       });
     });
 
@@ -347,15 +393,26 @@ describe('protocols/sftp', function () {
           return done(error);
         }
 
-        var error = new Error('Fake rmdir() error');
+        var fakeError = new Error('Fake rmdir() error');
 
-        ssh2.setError('rmdir', error);
+        ssh2.setError('rmdir', fakeError);
 
         sftp.rmdir('/path/to/directory', function (err) {
-          expect(err).to.equal(error);
+          expect(err).to.equal(fakeError);
 
           return done();
         });
+      });
+    });
+
+    it('should fail if the client is not connected', function (done) {
+      var client = new SFTPClient({});
+
+      client.rmdir('/path/to/directory', function (err) {
+        expect(err).to.be.an('error');
+        expect(err.message).to.equal('SFTP client not connected');
+
+        return done();
       });
     });
 
@@ -392,15 +449,26 @@ describe('protocols/sftp', function () {
           return done(error);
         }
 
-        var error = new Error('Fake unlink() error');
+        var fakeError = new Error('Fake unlink() error');
 
-        ssh2.setError('unlink', error);
+        ssh2.setError('unlink', fakeError);
 
         sftp.unlink('/path/to/file', function (err) {
-          expect(err).to.equal(error);
+          expect(err).to.equal(fakeError);
 
           return done();
         });
+      });
+    });
+
+    it('should fail if the client is not connected', function (done) {
+      var client = new SFTPClient({});
+
+      client.unlink('/path/to/file', function (err) {
+        expect(err).to.be.an('error');
+        expect(err.message).to.equal('SFTP client not connected');
+
+        return done();
       });
     });
 
@@ -414,11 +482,15 @@ describe('protocols/sftp', function () {
           return done(error);
         }
 
+        expect(sftp.connected).to.equal(true);
+
         expect(sftp.client.end.calledOnce).to.equal(false, 'should not call end() on ssh2 client at connection');
 
         sftp.disconnect();
 
         expect(sftp.client.end.calledOnce).to.equal(true, 'should call end() on ssh2 client');
+
+        expect(sftp.connected).to.equal(false);
 
         return done();
       });

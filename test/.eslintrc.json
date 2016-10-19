@@ -6,6 +6,9 @@
 
     // Best Practices
 
+    // enforce dot notation whenever possible
+    "dot-notation": ["error", {"allowKeywords": true, "allowPattern": "^[A-Za-z]+((_|-)[A-Za-z]+)+$"}],
+
     // disallow magic numbers
     "no-magic-numbers": "off",
 
