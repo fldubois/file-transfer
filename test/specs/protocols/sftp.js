@@ -1,6 +1,7 @@
 'use strict';
 
-var expect     = require('chai').expect;
+var chai       = require('chai');
+var expect     = chai.expect;
 var proxyquire = require('proxyquire').noCallThru();
 
 var ssh2 = require('../../mocks/ssh2');
@@ -8,6 +9,8 @@ var ssh2 = require('../../mocks/ssh2');
 var SFTPClient = proxyquire('../../../lib/protocols/sftp', {
   ssh2: ssh2
 });
+
+chai.use(require('sinon-chai'));
 
 function createClient(callback) {
   var sftp  = new SFTPClient({});
@@ -50,10 +53,10 @@ describe('protocols/sftp', function () {
 
         expect(sftp.client).to.be.an.instanceOf(ssh2.Client, 'should create a new ssh2 client');
 
-        expect(sftp.client.connect.calledOnce).to.equal(true, 'should call connect() on ssh2 client');
-        expect(sftp.client.connect.calledWith(options)).to.equal(true, 'should pass options to connect()');
+        expect(sftp.client.connect).to.have.callCount(1);
+        expect(sftp.client.connect).to.have.been.calledWith(options);
 
-        expect(sftp.client.sftp.calledOnce).to.equal(true, 'should call sftp() on ssh2 client');
+        expect(sftp.client.sftp).to.have.callCount(1);
 
         return done();
       });
@@ -101,7 +104,7 @@ describe('protocols/sftp', function () {
 
         expect(err).to.equal(error);
 
-        expect(sftp.client.end.calledOnce).to.equal(true, 'should call end() on ssh2 client');
+        expect(sftp.client.end).to.have.callCount(1);
 
         return done();
       });
@@ -118,7 +121,7 @@ describe('protocols/sftp', function () {
   describe('createReadStream()', function () {
 
     it('should create a readable stream from the SFTP connection', function (done) {
-      createClient(function (error, sftp) {
+      createClient(function (error, client) {
         if (error) {
           return done(error);
         }
@@ -126,19 +129,17 @@ describe('protocols/sftp', function () {
         var path    = '/path/to/file';
         var options = {test: true};
 
-        sftp.createReadStream(path, options);
+        client.createReadStream(path, options);
 
-        var spy = sftp.sftp.createReadStream;
-
-        expect(spy.calledOnce).to.equal(true, 'should call createReadStream() on ssh2 client');
-        expect(spy.calledWith(path, options)).to.equal(true, 'should pass path and options');
+        expect(client.sftp.createReadStream).to.have.callCount(1);
+        expect(client.sftp.createReadStream).to.have.been.calledWith(path, options);
 
         return done();
       });
     });
 
     it('should ignore the `handle` option', function (done) {
-      createClient(function (error, sftp) {
+      createClient(function (error, client) {
         if (error) {
           return done(error);
         }
@@ -146,11 +147,9 @@ describe('protocols/sftp', function () {
         var path    = '/path/to/file';
         var options = {test: true, handle: 0};
 
-        sftp.createReadStream(path, options);
+        client.createReadStream(path, options);
 
-        var spy = sftp.sftp.createReadStream;
-
-        expect(spy.calledWith(path, {test: true})).to.equal(true, 'should remove handle from options');
+        expect(client.sftp.createReadStream).to.have.been.calledWith(path, {test: true});
 
         return done();
       });
@@ -169,7 +168,7 @@ describe('protocols/sftp', function () {
   describe('createWriteStream()', function () {
 
     it('should create a readable stream from the SFTP connection', function (done) {
-      createClient(function (error, sftp) {
+      createClient(function (error, client) {
         if (error) {
           return done(error);
         }
@@ -177,19 +176,17 @@ describe('protocols/sftp', function () {
         var path    = '/path/to/file';
         var options = {test: true};
 
-        sftp.createWriteStream(path, options);
+        client.createWriteStream(path, options);
 
-        var spy = sftp.sftp.createWriteStream;
-
-        expect(spy.calledOnce).to.equal(true, 'should call createWriteStream() on ssh2 client');
-        expect(spy.calledWith(path, options)).to.equal(true, 'should pass path and options');
+        expect(client.sftp.createWriteStream).to.have.callCount(1);
+        expect(client.sftp.createWriteStream).to.have.been.calledWith(path, options);
 
         return done();
       });
     });
 
     it('should ignore the `handle` option', function (done) {
-      createClient(function (error, sftp) {
+      createClient(function (error, client) {
         if (error) {
           return done(error);
         }
@@ -197,11 +194,9 @@ describe('protocols/sftp', function () {
         var path    = '/path/to/file';
         var options = {test: true, handle: 0};
 
-        sftp.createWriteStream(path, options);
+        client.createWriteStream(path, options);
 
-        var spy = sftp.sftp.createWriteStream;
-
-        expect(spy.calledWith(path, {test: true})).to.equal(true, 'should remove handle from options');
+        expect(client.sftp.createWriteStream).to.have.been.calledWith(path, {test: true});
 
         return done();
       });
@@ -220,22 +215,20 @@ describe('protocols/sftp', function () {
   describe('mkdir()', function () {
 
     it('should create a directory via the SFTP connection', function (done) {
-      createClient(function (error, sftp) {
+      createClient(function (error, client) {
         if (error) {
           return done(error);
         }
 
         var path = '/path/to/directory';
 
-        sftp.mkdir(path, function (error) {
+        client.mkdir(path, function (error) {
           if (error) {
             return done(error);
           }
 
-          var spy = sftp.sftp.mkdir;
-
-          expect(spy.calledOnce).to.equal(true, 'should call mkdir() on ssh2 client');
-          expect(spy.calledWith(path)).to.equal(true, 'should pass path');
+          expect(client.sftp.mkdir).to.have.callCount(1);
+          expect(client.sftp.mkdir).to.have.been.calledWith(path);
 
           return done();
         });
@@ -243,22 +236,20 @@ describe('protocols/sftp', function () {
     });
 
     it('should accept `mode` parameter', function (done) {
-      createClient(function (error, sftp) {
+      createClient(function (error, client) {
         if (error) {
           return done(error);
         }
 
         var path = '/path/to/directory';
 
-        sftp.mkdir(path, '0775', function (error) {
+        client.mkdir(path, '0775', function (error) {
           if (error) {
             return done(error);
           }
 
-          var spy = sftp.sftp.mkdir;
-
-          expect(spy.calledOnce).to.equal(true, 'should call mkdir() on ssh2 client');
-          expect(spy.calledWith(path, {mode: '0775'})).to.equal(true, 'should pass path and mode');
+          expect(client.sftp.mkdir).to.have.callCount(1);
+          expect(client.sftp.mkdir).to.have.been.calledWith(path, {mode: '0775'});
 
           return done();
         });
@@ -266,7 +257,7 @@ describe('protocols/sftp', function () {
     });
 
     it('should transmit errors', function (done) {
-      createClient(function (error, sftp) {
+      createClient(function (error, client) {
         if (error) {
           return done(error);
         }
@@ -275,7 +266,7 @@ describe('protocols/sftp', function () {
 
         ssh2.setError('mkdir', fakeError);
 
-        sftp.mkdir('/path/to/directory', function (err) {
+        client.mkdir('/path/to/directory', function (err) {
           expect(err).to.equal(fakeError);
 
           return done();
@@ -299,22 +290,20 @@ describe('protocols/sftp', function () {
   describe('readdir()', function () {
 
     it('should return a list of filenames', function (done) {
-      createClient(function (error, sftp) {
+      createClient(function (error, client) {
         if (error) {
           return done(error);
         }
 
         var path = '/path/to/directory';
 
-        sftp.readdir(path, function (error, files) {
+        client.readdir(path, function (error, files) {
           if (error) {
             return done(error);
           }
 
-          var spy = sftp.sftp.readdir;
-
-          expect(spy.calledOnce).to.equal(true, 'should call readdir() on ssh2 client');
-          expect(spy.calledWith(path)).to.equal(true, 'should pass path');
+          expect(client.sftp.readdir).to.have.callCount(1);
+          expect(client.sftp.readdir).to.have.been.calledWith(path);
 
           expect(files).to.be.an('array');
           expect(files.length).to.equal(6);
@@ -329,7 +318,7 @@ describe('protocols/sftp', function () {
     });
 
     it('should transmit errors', function (done) {
-      createClient(function (error, sftp) {
+      createClient(function (error, client) {
         if (error) {
           return done(error);
         }
@@ -338,7 +327,7 @@ describe('protocols/sftp', function () {
 
         ssh2.setError('readdir', fakeError);
 
-        sftp.readdir('/path/to/directory', function (err, files) {
+        client.readdir('/path/to/directory', function (err, files) {
           expect(err).to.equal(fakeError);
           expect(files).to.be.a('undefined');
 
@@ -365,22 +354,20 @@ describe('protocols/sftp', function () {
   describe('rmdir()', function () {
 
     it('should create a directory via the SFTP connection', function (done) {
-      createClient(function (error, sftp) {
+      createClient(function (error, client) {
         if (error) {
           return done(error);
         }
 
         var path = '/path/to/directory';
 
-        sftp.rmdir(path, function (error) {
+        client.rmdir(path, function (error) {
           if (error) {
             return done(error);
           }
 
-          var spy = sftp.sftp.rmdir;
-
-          expect(spy.calledOnce).to.equal(true, 'should call rmdir() on ssh2 client');
-          expect(spy.calledWith(path)).to.equal(true, 'should pass path');
+          expect(client.sftp.rmdir).to.have.callCount(1);
+          expect(client.sftp.rmdir).to.have.been.calledWith(path);
 
           return done();
         });
@@ -388,7 +375,7 @@ describe('protocols/sftp', function () {
     });
 
     it('should transmit errors', function (done) {
-      createClient(function (error, sftp) {
+      createClient(function (error, client) {
         if (error) {
           return done(error);
         }
@@ -397,7 +384,7 @@ describe('protocols/sftp', function () {
 
         ssh2.setError('rmdir', fakeError);
 
-        sftp.rmdir('/path/to/directory', function (err) {
+        client.rmdir('/path/to/directory', function (err) {
           expect(err).to.equal(fakeError);
 
           return done();
@@ -421,22 +408,20 @@ describe('protocols/sftp', function () {
   describe('unlink()', function () {
 
     it('should delete the file via the SFTP connection', function (done) {
-      createClient(function (error, sftp) {
+      createClient(function (error, client) {
         if (error) {
           return done(error);
         }
 
         var path = '/path/to/file';
 
-        sftp.unlink(path, function (error) {
+        client.unlink(path, function (error) {
           if (error) {
             return done(error);
           }
 
-          var spy = sftp.sftp.unlink;
-
-          expect(spy.calledOnce).to.equal(true, 'should call unlink() on ssh2 client');
-          expect(spy.calledWith(path)).to.equal(true, 'should pass parameters');
+          expect(client.sftp.unlink).to.have.callCount(1);
+          expect(client.sftp.unlink).to.have.been.calledWith(path);
 
           return done();
         });
@@ -444,7 +429,7 @@ describe('protocols/sftp', function () {
     });
 
     it('should transmit errors', function (done) {
-      createClient(function (error, sftp) {
+      createClient(function (error, client) {
         if (error) {
           return done(error);
         }
@@ -453,7 +438,7 @@ describe('protocols/sftp', function () {
 
         ssh2.setError('unlink', fakeError);
 
-        sftp.unlink('/path/to/file', function (err) {
+        client.unlink('/path/to/file', function (err) {
           expect(err).to.equal(fakeError);
 
           return done();
@@ -477,20 +462,20 @@ describe('protocols/sftp', function () {
   describe('disconnect()', function () {
 
     it('should close the SSH connection', function (done) {
-      createClient(function (error, sftp) {
+      createClient(function (error, client) {
         if (error) {
           return done(error);
         }
 
-        expect(sftp.connected).to.equal(true);
+        expect(client.connected).to.equal(true);
 
-        expect(sftp.client.end.calledOnce).to.equal(false, 'should not call end() on ssh2 client at connection');
+        expect(client.client.end).to.have.callCount(0);
 
-        sftp.disconnect();
+        client.disconnect();
 
-        expect(sftp.client.end.calledOnce).to.equal(true, 'should call end() on ssh2 client');
+        expect(client.client.end).to.have.callCount(1);
 
-        expect(sftp.connected).to.equal(false);
+        expect(client.connected).to.equal(false);
 
         return done();
       });
