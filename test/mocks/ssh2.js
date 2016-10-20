@@ -12,6 +12,7 @@ var errors = {};
 function SFTPStreamMock() {
   sinon.spy(this, 'createReadStream');
   sinon.spy(this, 'createWriteStream');
+  sinon.spy(this, 'fastGet');
   sinon.spy(this, 'mkdir');
   sinon.spy(this, 'readdir');
   sinon.spy(this, 'rmdir');
@@ -24,6 +25,10 @@ SFTPStreamMock.prototype.createReadStream = function () {
 
 SFTPStreamMock.prototype.createWriteStream = function () {
   return null;
+};
+
+SFTPStreamMock.prototype.fastGet = function (remote, local, callback) {
+  return errors.hasOwnProperty('fastGet') ? callback(errors.fastGet) : callback(null);
 };
 
 SFTPStreamMock.prototype.mkdir = function (path, mode, callback) {
