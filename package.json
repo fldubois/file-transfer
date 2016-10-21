@@ -19,8 +19,10 @@
   },
   "main": "lib/file-transfer.js",
   "scripts": {
-    "lint": "eslint lib test",
-    "test": "istanbul cover --root 'lib' --include-all-sources true _mocha -- --recursive test/specs"
+    "test": "npm run test:lint && npm run test:specs && npm run test:coverage",
+    "test:lint": "eslint lib test",
+    "test:specs": "istanbul cover --root 'lib' --include-all-sources true _mocha -- --recursive test/specs",
+    "test:coverage": "istanbul check-coverage --statements 100 --functions 100 --branches 100 --lines 100"
   },
   "dependencies": {
     "ssh2": "^0.5.2"
