@@ -342,6 +342,61 @@ describe('protocols/sftp', function () {
 
   });
 
+  describe('put()', function () {
+
+    it('should download the file via the SFTP connection', function (done) {
+      createClient(function (error, client) {
+        if (error) {
+          return done(error);
+        }
+
+        var local  = '/path/to/local/file';
+        var remote = '/path/to/remote/file';
+
+        client.put(local, remote, function (error) {
+          if (error) {
+            return done(error);
+          }
+
+          expect(client.sftp.fastPut).to.have.callCount(1);
+          expect(client.sftp.fastPut).to.have.been.calledWith(local, remote);
+
+          return done();
+        });
+      });
+    });
+
+    it('should transmit errors', function (done) {
+      createClient(function (error, client) {
+        if (error) {
+          return done(error);
+        }
+
+        var fakeError = new Error('Fake fastPut() error');
+
+        ssh2.setError('fastPut', fakeError);
+
+        client.put('/path/to/local/file', '/path/to/remote/file', function (err) {
+          expect(err).to.equal(fakeError);
+
+          return done();
+        });
+      });
+    });
+
+    it('should fail if the client is not connected', function (done) {
+      var client = new SFTPClient({});
+
+      client.put('/path/to/local/file', '/path/to/remote/file', function (err) {
+        expect(err).to.be.an('error');
+        expect(err.message).to.equal('SFTP client not connected');
+
+        return done();
+      });
+    });
+
+  });
+
   describe('readdir()', function () {
 
     it('should return a list of filenames', function (done) {
