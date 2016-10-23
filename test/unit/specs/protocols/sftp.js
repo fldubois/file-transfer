@@ -6,7 +6,7 @@ var proxyquire = require('proxyquire').noCallThru();
 
 var ssh2 = require('../../mocks/ssh2');
 
-var SFTPClient = proxyquire('../../../lib/protocols/sftp', {
+var SFTPClient = proxyquire('../../../../lib/protocols/sftp', {
   ssh2: ssh2
 });
 
