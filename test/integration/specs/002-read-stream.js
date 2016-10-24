@@ -6,15 +6,19 @@ var sftpd = require('../utils/sftpd');
 
 var transfer = require('../../../lib/file-transfer');
 
-describe('Scenario: Connection', function () {
+describe('Scenario: Read file with a stream', function () {
 
   var server = null;
   var client = null;
+  var stream = null;
 
   before('start the server', function (done) {
     sftpd({
       username: 'foo',
-      password: 'bar'
+      password: 'bar',
+      files:    {
+        'path/to/file.txt': new Buffer('Hello, world !', 'utf8')
+      }
     }, function (error, _server) {
       if (error) {
         return done(error);
@@ -41,6 +45,25 @@ describe('Scenario: Connection', function () {
 
       expect(server.clients.length).to.equal(1);
 
+      return done();
+    });
+  });
+
+  it('should create a read stream', function (done) {
+    stream = client.createReadStream('path/to/file.txt');
+
+    var content = '';
+
+    stream.on('data', function (data) {
+      content += data.toString();
+    });
+
+    stream.on('error', function (error) {
+      return done(error);
+    });
+
+    stream.on('end', function () {
+      expect(content).to.equal('Hello, world !');
       return done();
     });
   });
