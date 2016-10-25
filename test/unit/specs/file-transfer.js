@@ -3,9 +3,9 @@
 var expect     = require('chai').expect;
 var proxyquire = require('proxyquire').noCallThru();
 
-var ClientMock = require('../mocks/client');
+var ClientMock = require('test/unit/mocks/client');
 
-var transfer = proxyquire('../../../lib/file-transfer', {
+var transfer = proxyquire('lib/file-transfer', {
   './protocols/sftp': ClientMock
 });
 

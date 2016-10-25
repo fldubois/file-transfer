@@ -2,9 +2,9 @@
 
 var expect = require('chai').expect;
 
-var sftpd = require('../utils/sftpd');
+var sftpd = require('test/integration/utils/sftpd');
 
-var transfer = require('../../../lib/file-transfer');
+var transfer = require('lib/file-transfer');
 
 describe('Scenario: Connection', function () {
 
