@@ -28,14 +28,6 @@ function readServerKey(callback) {
 }
 
 module.exports = function (options, callback) {
-  var files = options.files || {};
-
-  Object.keys(files).forEach(function (filepath) {
-    if (typeof files[filepath] === 'string') {
-      files[filepath] = new Buffer(files[filepath], 'utf8');
-    }
-  });
-
   readServerKey(function (error, _key) {
     if (error) {
       return callback(error);
@@ -46,6 +38,13 @@ module.exports = function (options, callback) {
     });
 
     server.clients = [];
+    server.files   = options.files || {};
+
+    Object.keys(server.files).forEach(function (filepath) {
+      if (typeof server.files[filepath] === 'string') {
+        server.files[filepath] = new Buffer(server.files[filepath], 'utf8');
+      }
+    });
 
     server.on('connection', function (client) {
       server.clients.push(client);
@@ -67,12 +66,16 @@ module.exports = function (options, callback) {
           var handles = {};
 
           sftpStream.on('OPEN', function (reqid, filepath, flags) {
-            if (!files.hasOwnProperty(filepath)) {
-              return sftpStream.status(reqid, STATUS_CODE.NO_SUCH_FILE);
+            if (!(flags & (OPEN_MODE.READ | OPEN_MODE.WRITE | OPEN_MODE.APPEND))) {
+              return sftpStream.status(reqid, STATUS_CODE.PERMISSION_DENIED);
             }
 
-            if (!(flags & OPEN_MODE.READ)) {
-              return sftpStream.status(reqid, STATUS_CODE.PERMISSION_DENIED);
+            if (flags & OPEN_MODE.WRITE || (flags & OPEN_MODE.APPEND && !server.files.hasOwnProperty(filepath))) {
+              server.files[filepath] = new Buffer(0);
+            }
+
+            if (flags & OPEN_MODE.READ && !server.files.hasOwnProperty(filepath)) {
+              return sftpStream.status(reqid, STATUS_CODE.NO_SUCH_FILE);
             }
 
             handles[reqid] = filepath;
@@ -89,13 +92,30 @@ module.exports = function (options, callback) {
               return sftpStream.status(reqid, STATUS_CODE.FAILURE);
             }
 
-            var file = files[handles[handle.readUInt32BE(0, true)]];
+            var file = server.files[handles[handle.readUInt32BE(0, true)]];
 
             if (file.length > offset) {
               sftpStream.data(reqid, file.toString('utf8', offset, Math.min(file.length, offset + length)));
             } else {
               sftpStream.status(reqid, STATUS_CODE.EOF);
             }
+          });
+
+          sftpStream.on('WRITE', function (reqid, handle, offset, data) {
+            if (handle.length !== 4 || !handles.hasOwnProperty(handle.readUInt32BE(0, true))) {
+              return sftpStream.status(reqid, STATUS_CODE.FAILURE);
+            }
+
+            var file = server.files[handles[handle.readUInt32BE(0, true)]];
+
+            var buffer = new Buffer(Math.max(file.length, offset + data.length));
+
+            file.copy(buffer);
+            data.copy(buffer, offset);
+
+            server.files[handles[handle.readUInt32BE(0, true)]] = buffer;
+
+            sftpStream.status(reqid, STATUS_CODE.OK);
           });
 
           sftpStream.on('CLOSE', function (reqid, handle) {
