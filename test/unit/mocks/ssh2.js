@@ -20,12 +20,12 @@ function SFTPStreamMock() {
   sinon.spy(this, 'unlink');
 }
 
-SFTPStreamMock.prototype.createReadStream = function () {
-  return null;
+SFTPStreamMock.prototype.createReadStream = function (path, options) {
+  return {readable: true, path: path, options: options};
 };
 
-SFTPStreamMock.prototype.createWriteStream = function () {
-  return null;
+SFTPStreamMock.prototype.createWriteStream = function (path, options) {
+  return {writable: true, path: path, options: options};
 };
 
 SFTPStreamMock.prototype.fastGet = function (remote, local, callback) {

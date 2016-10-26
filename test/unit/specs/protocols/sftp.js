@@ -184,7 +184,14 @@ describe('protocols/sftp', function () {
         var path    = '/path/to/file';
         var options = {test: true};
 
-        client.createReadStream(path, options);
+        var stream = client.createReadStream(path, options);
+
+        expect(stream).to.be.an('object');
+        expect(stream).to.deep.equal({
+          readable: true,
+          path:     path,
+          options:  options
+        });
 
         expect(client.sftp.createReadStream).to.have.callCount(1);
         expect(client.sftp.createReadStream).to.have.been.calledWith(path, options);
@@ -222,7 +229,7 @@ describe('protocols/sftp', function () {
 
   describe('createWriteStream()', function () {
 
-    it('should create a readable stream from the SFTP connection', function (done) {
+    it('should create a writable stream from the SFTP connection', function (done) {
       createClient(function (error, client) {
         if (error) {
           return done(error);
@@ -231,7 +238,14 @@ describe('protocols/sftp', function () {
         var path    = '/path/to/file';
         var options = {test: true};
 
-        client.createWriteStream(path, options);
+        var stream = client.createWriteStream(path, options);
+
+        expect(stream).to.be.an('object');
+        expect(stream).to.deep.equal({
+          writable: true,
+          path:     path,
+          options:  options
+        });
 
         expect(client.sftp.createWriteStream).to.have.callCount(1);
         expect(client.sftp.createWriteStream).to.have.been.calledWith(path, options);
