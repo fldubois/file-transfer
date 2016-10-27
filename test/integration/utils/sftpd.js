@@ -53,6 +53,7 @@ module.exports = function (options, callback) {
         if (ctx.method === 'password' && ctx.username === options.username && ctx.password === options.password) {
           ctx.accept();
         } else {
+          server.clients.splice(server.clients.indexOf(client), 1);
           ctx.reject();
         }
       });

@@ -26,6 +26,60 @@ describe('Scenario: Connection', function () {
     });
   });
 
+  it('should fail on wrong host', function (done) {
+    transfer.connect('sftp', {
+      host:     '127.0.0.2',
+      port:     20000,
+      username: 'foo',
+      password: 'bar'
+    }, function (err, _client) {
+      expect(err).to.be.an('error');
+      expect(err.code).to.equal('ECONNREFUSED');
+
+      expect(_client).to.be.an('undefined');
+
+      expect(server.clients.length).to.equal(0);
+
+      return done();
+    });
+  });
+
+  it('should fail on wrong port', function (done) {
+    transfer.connect('sftp', {
+      host:     '127.0.0.1',
+      port:     20001,
+      username: 'foo',
+      password: 'bar'
+    }, function (err, _client) {
+      expect(err).to.be.an('error');
+      expect(err.code).to.equal('ECONNREFUSED');
+
+      expect(_client).to.be.an('undefined');
+
+      expect(server.clients.length).to.equal(0);
+
+      return done();
+    });
+  });
+
+  it('should fail on bad credentials', function (done) {
+    transfer.connect('sftp', {
+      host:     '127.0.0.1',
+      port:     20000,
+      username: 'baz',
+      password: 'bar'
+    }, function (err, _client) {
+      expect(err).to.be.an('error');
+      expect(err.message).to.equal('All configured authentication methods failed');
+
+      expect(_client).to.be.an('undefined');
+
+      expect(server.clients.length).to.equal(0);
+
+      return done();
+    });
+  });
+
   it('should connect to the server', function (done) {
     transfer.connect('sftp', {
       host:     '127.0.0.1',
