@@ -87,6 +87,23 @@ module.exports = function (options, callback) {
             sftpStream.handle(reqid, handle);
           });
 
+          sftpStream.on('STAT', function (reqid, filepath) {
+            if (!server.files.hasOwnProperty(filepath)) {
+              return sftpStream.status(reqid, STATUS_CODE.NO_SUCH_FILE);
+            }
+
+            var now = Date.now();
+
+            return sftpStream.attrs(reqid, {
+              mode:  '666',
+              uid:   0,
+              gid:   0,
+              size:  server.files[filepath].length,
+              atime: now,
+              mtime: now
+            });
+          });
+
           sftpStream.on('READ', function (reqid, handle, offset, length) {
             if (handle.length !== 4 || !handles.hasOwnProperty(handle.readUInt32BE(0, true))) {
               return sftpStream.status(reqid, STATUS_CODE.FAILURE);
