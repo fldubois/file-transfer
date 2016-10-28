@@ -136,6 +136,15 @@ module.exports = function (options, callback) {
             sftpStream.status(reqid, STATUS_CODE.OK);
           });
 
+          sftpStream.on('MKDIR', function (reqid, directory, attrs) {
+            if (server.files.hasOwnProperty(directory)) {
+              return sftpStream.status(reqid, STATUS_CODE.FAILURE, 'file exists');
+            }
+
+            server.files[directory] = {'.': attrs};
+            sftpStream.status(reqid, STATUS_CODE.OK);
+          });
+
           sftpStream.on('CLOSE', function (reqid, handle) {
             if (handle.length !== 4 || !handles.hasOwnProperty(handle.readUInt32BE(0, true))) {
               return sftpStream.status(reqid, STATUS_CODE.FAILURE);
