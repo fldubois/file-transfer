@@ -145,6 +145,42 @@ module.exports = function (options, callback) {
             sftpStream.status(reqid, STATUS_CODE.OK);
           });
 
+          sftpStream.on('OPENDIR', function (reqid, directory) {
+            if (!server.files.hasOwnProperty(directory)) {
+              return sftpStream.status(reqid, STATUS_CODE.NO_SUCH_FILE);
+            }
+
+            if (!Array.isArray(server.files[directory])) {
+              return sftpStream.status(reqid, STATUS_CODE.FAILURE);
+            }
+
+            handles[reqid] = {
+              files: server.files[directory],
+              read:  false
+            };
+
+            var handle = new Buffer(4);
+
+            handle.writeUInt32BE(reqid, 0, true);
+
+            sftpStream.handle(reqid, handle);
+          });
+
+          sftpStream.on('READDIR', function (reqid, handle) {
+            if (handle.length !== 4 || !handles.hasOwnProperty(handle.readUInt32BE(0, true))) {
+              return sftpStream.status(reqid, STATUS_CODE.FAILURE);
+            }
+
+            var data = handles[handle.readUInt32BE(0, true)];
+
+            if (data.read === false) {
+              data.read = true;
+              return sftpStream.name(reqid, data.files);
+            }
+
+            return sftpStream.status(reqid, STATUS_CODE.EOF);
+          });
+
           sftpStream.on('CLOSE', function (reqid, handle) {
             if (handle.length !== 4 || !handles.hasOwnProperty(handle.readUInt32BE(0, true))) {
               return sftpStream.status(reqid, STATUS_CODE.FAILURE);
