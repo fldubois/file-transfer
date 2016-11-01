@@ -195,6 +195,20 @@ module.exports = function (options, callback) {
             return sftpStream.status(reqid, STATUS_CODE.OK);
           });
 
+          sftpStream.on('REMOVE', function (reqid, filepath) {
+            if (!server.files.hasOwnProperty(filepath)) {
+              return sftpStream.status(reqid, STATUS_CODE.NO_SUCH_FILE);
+            }
+
+            if (!Buffer.isBuffer(server.files[filepath])) {
+              return sftpStream.status(reqid, STATUS_CODE.FAILURE);
+            }
+
+            delete server.files[filepath];
+
+            return sftpStream.status(reqid, STATUS_CODE.OK);
+          });
+
           sftpStream.on('CLOSE', function (reqid, handle) {
             if (handle.length !== 4 || !handles.hasOwnProperty(handle.readUInt32BE(0, true))) {
               return sftpStream.status(reqid, STATUS_CODE.FAILURE);
