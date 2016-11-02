@@ -71,12 +71,16 @@ module.exports = function (options, callback) {
               return sftpStream.status(reqid, STATUS_CODE.PERMISSION_DENIED);
             }
 
-            if (flags & OPEN_MODE.WRITE || (flags & OPEN_MODE.APPEND && !server.files.hasOwnProperty(filepath))) {
-              server.files[filepath] = new Buffer(0);
-            }
-
             if (flags & OPEN_MODE.READ && !server.files.hasOwnProperty(filepath)) {
               return sftpStream.status(reqid, STATUS_CODE.NO_SUCH_FILE);
+            }
+
+            if (flags & OPEN_MODE.EXCL && server.files.hasOwnProperty(filepath)) {
+              return sftpStream.status(reqid, STATUS_CODE.PERMISSION_DENIED);
+            }
+
+            if (flags & OPEN_MODE.WRITE || (flags & OPEN_MODE.APPEND && !server.files.hasOwnProperty(filepath))) {
+              server.files[filepath] = new Buffer(0);
             }
 
             handles[reqid] = filepath;

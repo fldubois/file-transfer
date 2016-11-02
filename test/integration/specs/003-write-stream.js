@@ -14,7 +14,10 @@ describe('Scenario: Write file with a stream', function () {
   before('start the server', function (done) {
     sftpd({
       username: 'foo',
-      password: 'bar'
+      password: 'bar',
+      files:    {
+        'path/to/existing/file.txt': new Buffer('Hello, world !', 'utf8')
+      }
     }, function (error, _server) {
       if (error) {
         return done(error);
@@ -65,6 +68,17 @@ describe('Scenario: Write file with a stream', function () {
 
         return done();
       });
+    });
+  });
+
+  it('should return errors', function (done) {
+    var stream = client.createWriteStream('path/to/existing/file.txt', {flags: 'wx'});
+
+    stream.on('error', function (error) {
+      expect(error).to.be.an('error');
+      expect(error.message).to.equal('Permission denied');
+
+      return done();
     });
   });
 

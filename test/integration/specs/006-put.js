@@ -64,6 +64,15 @@ describe('Scenario: Get a file', function () {
     expect(server.files[remote].toString()).to.equal('Hello, world !');
   });
 
+  it('should return errors', function (done) {
+    client.put('path/to/missing/file.txt', remote, function (error) {
+      expect(error).to.be.an('error');
+      expect(error.code).to.equal('ENOENT');
+
+      return done();
+    });
+  });
+
   it('should disconnect to the server', function (done) {
     client.disconnect();
 

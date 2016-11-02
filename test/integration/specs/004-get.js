@@ -70,6 +70,15 @@ describe('Scenario: Get a file', function () {
     });
   });
 
+  it('should return errors', function (done) {
+    client.get('path/to/missing/file.txt', local, function (error) {
+      expect(error).to.be.an('error');
+      expect(error.message).to.equal('No such file or directory');
+
+      return done();
+    });
+  });
+
   it('should disconnect to the server', function (done) {
     client.disconnect();
 

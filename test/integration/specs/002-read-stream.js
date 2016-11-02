@@ -68,6 +68,25 @@ describe('Scenario: Read file with a stream', function () {
     });
   });
 
+  it('should return errors', function (done) {
+    stream = client.createReadStream('path/to/missing/file.txt');
+
+    stream.on('data', function () {
+      return done(new Error('Read stream created on missing file'));
+    });
+
+    stream.on('error', function (error) {
+      expect(error).to.be.an('error');
+      expect(error.message).to.equal('No such file or directory');
+
+      return done();
+    });
+
+    stream.on('end', function () {
+      return done(new Error('Read stream created on missing file'));
+    });
+  });
+
   it('should disconnect to the server', function (done) {
     client.disconnect();
 
