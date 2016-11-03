@@ -5,7 +5,10 @@ var path = require('path');
 
 var ssh2 = require('ssh2');
 
-var OPEN_MODE   = ssh2.SFTP_OPEN_MODE;
+var SFTPStream = require('ssh2-streams').SFTPStream;
+
+var VirtualFS = require('./virtual-fs');
+
 var STATUS_CODE = ssh2.SFTP_STATUS_CODE;
 
 var key = null;
@@ -38,7 +41,11 @@ module.exports = function (options, callback) {
     });
 
     server.clients = [];
+    server.fs      = new VirtualFS(options.files);
+
+    // TODO: Remove legacy virtual FS
     server.files   = options.files || {};
+
 
     Object.keys(server.files).forEach(function (filepath) {
       if (typeof server.files[filepath] === 'string') {
@@ -67,77 +74,55 @@ module.exports = function (options, callback) {
           var handles = {};
 
           sftpStream.on('OPEN', function (reqid, filepath, flags) {
-            if (!(flags & (OPEN_MODE.READ | OPEN_MODE.WRITE | OPEN_MODE.APPEND))) {
-              return sftpStream.status(reqid, STATUS_CODE.PERMISSION_DENIED);
-            }
+            server.fs.open(filepath, SFTPStream.flagsToString(flags), function (error, fd) {
+              if (error) {
+                if (error.code === 'ENOENT') {
+                  return sftpStream.status(reqid, STATUS_CODE.NO_SUCH_FILE);
+                }
 
-            if (flags & OPEN_MODE.READ && !server.files.hasOwnProperty(filepath)) {
-              return sftpStream.status(reqid, STATUS_CODE.NO_SUCH_FILE);
-            }
+                return sftpStream.status(reqid, STATUS_CODE.FAILURE, error.message);
+              }
 
-            if (flags & OPEN_MODE.EXCL && server.files.hasOwnProperty(filepath)) {
-              return sftpStream.status(reqid, STATUS_CODE.PERMISSION_DENIED);
-            }
+              var handle = new Buffer(4);
 
-            if (flags & OPEN_MODE.WRITE || (flags & OPEN_MODE.APPEND && !server.files.hasOwnProperty(filepath))) {
-              server.files[filepath] = new Buffer(0);
-            }
+              handle.writeUInt32BE(fd, 0, true);
 
-            handles[reqid] = filepath;
-
-            var handle = new Buffer(4);
-
-            handle.writeUInt32BE(reqid, 0, true);
-
-            sftpStream.handle(reqid, handle);
+              sftpStream.handle(reqid, handle);
+            });
           });
 
           sftpStream.on('STAT', function (reqid, filepath) {
-            if (!server.files.hasOwnProperty(filepath)) {
-              return sftpStream.status(reqid, STATUS_CODE.NO_SUCH_FILE);
-            }
+            server.fs.stat(filepath, function (error, stats) {
+              if (error) {
+                return sftpStream.status(reqid, STATUS_CODE.FAILURE, error.message);
+              }
 
-            var now = Date.now();
-
-            return sftpStream.attrs(reqid, {
-              mode:  '666',
-              uid:   0,
-              gid:   0,
-              size:  server.files[filepath].length,
-              atime: now,
-              mtime: now
+              return sftpStream.attrs(reqid, stats);
             });
           });
 
           sftpStream.on('READ', function (reqid, handle, offset, length) {
-            if (handle.length !== 4 || !handles.hasOwnProperty(handle.readUInt32BE(0, true))) {
-              return sftpStream.status(reqid, STATUS_CODE.FAILURE);
-            }
+            var fd = handle.readUInt32BE(0, true);
 
-            var file = server.files[handles[handle.readUInt32BE(0, true)]];
+            server.fs.read(fd, new Buffer(length), offset, length, 0, function (error, bytesRead, buffer) {
+              if (error) {
+                return sftpStream.status(reqid, STATUS_CODE.FAILURE);
+              }
 
-            if (file.length > offset) {
-              sftpStream.data(reqid, file.toString('utf8', offset, Math.min(file.length, offset + length)));
-            } else {
-              sftpStream.status(reqid, STATUS_CODE.EOF);
-            }
+              if (bytesRead === 0) {
+                return sftpStream.status(reqid, STATUS_CODE.EOF);
+              }
+
+              return sftpStream.data(reqid, buffer.toString('utf8', 0, bytesRead));
+            });
           });
 
           sftpStream.on('WRITE', function (reqid, handle, offset, data) {
-            if (handle.length !== 4 || !handles.hasOwnProperty(handle.readUInt32BE(0, true))) {
-              return sftpStream.status(reqid, STATUS_CODE.FAILURE);
-            }
+            var fd = handle.readUInt32BE(0, true);
 
-            var file = server.files[handles[handle.readUInt32BE(0, true)]];
-
-            var buffer = new Buffer(Math.max(file.length, offset + data.length));
-
-            file.copy(buffer);
-            data.copy(buffer, offset);
-
-            server.files[handles[handle.readUInt32BE(0, true)]] = buffer;
-
-            sftpStream.status(reqid, STATUS_CODE.OK);
+            server.fs.write(fd, data, offset, data.length, 0, function (error) {
+              return sftpStream.status(reqid, error ? STATUS_CODE.FAILURE : STATUS_CODE.OK);
+            });
           });
 
           sftpStream.on('MKDIR', function (reqid, directory, attrs) {
@@ -214,13 +199,17 @@ module.exports = function (options, callback) {
           });
 
           sftpStream.on('CLOSE', function (reqid, handle) {
-            if (handle.length !== 4 || !handles.hasOwnProperty(handle.readUInt32BE(0, true))) {
-              return sftpStream.status(reqid, STATUS_CODE.FAILURE);
+            var fd = handle.readUInt32BE(0, true);
+
+            // TODO: Remove legacy virtual FS
+            if (handles.hasOwnProperty(fd)) {
+              delete handles[fd];
+              return sftpStream.status(reqid, STATUS_CODE.OK);
             }
 
-            delete handles[handle.readUInt32BE(0, true)];
-
-            sftpStream.status(reqid, STATUS_CODE.OK);
+            server.fs.close(fd, function (error) {
+              return sftpStream.status(reqid, error ? STATUS_CODE.FAILURE : STATUS_CODE.OK);
+            });
           });
 
         });

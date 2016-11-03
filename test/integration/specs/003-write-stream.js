@@ -76,7 +76,7 @@ describe('Scenario: Write file with a stream', function () {
 
     stream.on('error', function (error) {
       expect(error).to.be.an('error');
-      expect(error.message).to.equal('Permission denied');
+      expect(error.message).to.equal('EEXIST, open \'path/to/existing/file.txt\'');
 
       return done();
     });
