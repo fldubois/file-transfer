@@ -63,8 +63,8 @@ describe('Scenario: Write file with a stream', function () {
           return done(error);
         }
 
-        expect(server.files).to.include.keys(filepath);
-        expect(server.files[filepath].toString()).to.equal('Hello, friend.');
+        expect(server.fs.files).to.include.keys(filepath);
+        expect(server.fs.files[filepath].toString()).to.equal('Hello, friend.');
 
         return done();
       });

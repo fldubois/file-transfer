@@ -129,6 +129,115 @@ VirtualFS.prototype.write = function (fd, buffer, offset, length, position, call
   return callback(null, buffer.length, buffer);
 };
 
+VirtualFS.prototype.mkdir = function (path, mode, callback) {
+  var error = null;
+
+  if (typeof mode === 'function') {
+    callback = mode;
+    mode     = null;
+  }
+
+  mode = mode || parseInt('666', 8);
+
+  if (this.files.hasOwnProperty(path)) {
+    error = new Error('EEXIST, mkdir \'' + path + '\'');
+
+    error.errno = 47;
+    error.code  = 'EEXIST';
+    error.path  = path;
+
+    return callback(error);
+  }
+
+  this.files[path] = {
+    '.': {mode: mode}
+  };
+
+  return callback(null);
+};
+
+VirtualFS.prototype.readdir = function (path, callback) {
+  var error = null;
+
+  if (!this.files.hasOwnProperty(path)) {
+    error = new Error('ENOENT, readdir \'' + path + '\'');
+
+    error.errno = 34;
+    error.code  = 'ENOENT';
+    error.path  = path;
+
+    return callback(error);
+  }
+
+  if (Buffer.isBuffer(this.files[path])) {
+    error = new Error('ENOTDIR,, readdir \'' + path + '\'');
+
+    error.errno = 27;
+    error.code  = 'ENOTDIR,';
+    error.path  = path;
+
+    return callback(error);
+  }
+
+  return callback(null, this.files[path]);
+};
+
+VirtualFS.prototype.rmdir = function (path, callback) {
+  var error = null;
+
+  if (!this.files.hasOwnProperty(path)) {
+    error = new Error('ENOENT, rmdir \'' + path + '\'');
+
+    error.errno = 34;
+    error.code  = 'ENOENT';
+    error.path  = path;
+
+    return callback(error);
+  }
+
+  if (Buffer.isBuffer(this.files[path])) {
+    error = new Error('ENOTDIR, rmdir \'' + path + '\'');
+
+    error.errno = 27;
+    error.code  = 'ENOTDIR';
+    error.path  = path;
+
+    return callback(error);
+  }
+
+  delete this.files[path];
+
+  return callback(null);
+};
+
+VirtualFS.prototype.unlink = function (path, callback) {
+  var error = null;
+
+  if (!this.files.hasOwnProperty(path)) {
+    error = new Error('ENOENT, unlink \'' + path + '\'');
+
+    error.errno = 34;
+    error.code  = 'ENOENT';
+    error.path  = path;
+
+    return callback(error);
+  }
+
+  if (!Buffer.isBuffer(this.files[path])) {
+    error = new Error('EISDIR, unlink \'' + path + '\'');
+
+    error.errno = 28;
+    error.code  = 'EISDIR';
+    error.path  = path;
+
+    return callback(error);
+  }
+
+  delete this.files[path];
+
+  return callback(null);
+};
+
 VirtualFS.prototype.close = function (fd, callback) {
   if (typeof this.handles[fd] !== 'string') {
     var error = new Error('EBADF, close');

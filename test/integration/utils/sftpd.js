@@ -43,15 +43,7 @@ module.exports = function (options, callback) {
     server.clients = [];
     server.fs      = new VirtualFS(options.files);
 
-    // TODO: Remove legacy virtual FS
-    server.files   = options.files || {};
-
-
-    Object.keys(server.files).forEach(function (filepath) {
-      if (typeof server.files[filepath] === 'string') {
-        server.files[filepath] = new Buffer(server.files[filepath], 'utf8');
-      }
-    });
+    var directories = {};
 
     server.on('connection', function (client) {
       server.clients.push(client);
@@ -70,8 +62,6 @@ module.exports = function (options, callback) {
 
         session.on('sftp', function (sftpAccept) {
           var sftpStream = sftpAccept();
-
-          var handles = {};
 
           sftpStream.on('OPEN', function (reqid, filepath, flags) {
             server.fs.open(filepath, SFTPStream.flagsToString(flags), function (error, fd) {
@@ -126,85 +116,105 @@ module.exports = function (options, callback) {
           });
 
           sftpStream.on('MKDIR', function (reqid, directory, attrs) {
-            if (server.files.hasOwnProperty(directory)) {
-              return sftpStream.status(reqid, STATUS_CODE.FAILURE, 'file exists');
-            }
+            server.fs.mkdir(directory, attrs.mode, function (error) {
+              if (error) {
+                return sftpStream.status(reqid, STATUS_CODE.FAILURE, error.message);
+              }
 
-            server.files[directory] = {'.': attrs};
-            sftpStream.status(reqid, STATUS_CODE.OK);
+              return sftpStream.status(reqid, STATUS_CODE.OK);
+            });
           });
 
           sftpStream.on('OPENDIR', function (reqid, directory) {
-            if (!server.files.hasOwnProperty(directory)) {
-              return sftpStream.status(reqid, STATUS_CODE.NO_SUCH_FILE);
-            }
+            server.fs.stat(directory, function (error, stats) {
+              if (error) {
+                if (error.code === 'ENOENT') {
+                  return sftpStream.status(reqid, STATUS_CODE.NO_SUCH_FILE);
+                }
 
-            if (!Array.isArray(server.files[directory])) {
-              return sftpStream.status(reqid, STATUS_CODE.FAILURE);
-            }
+                return sftpStream.status(reqid, STATUS_CODE.FAILURE, error.message);
+              }
 
-            handles[reqid] = {
-              files: server.files[directory],
-              read:  false
-            };
+              if (stats.size > 0) {
+                return sftpStream.status(reqid, STATUS_CODE.FAILURE, 'ENOTDIR, opendir \'/etc/hosts\'');
+              }
 
-            var handle = new Buffer(4);
+              server.fs.open(directory, 'r', function (error, fd) {
+                if (error) {
+                  return sftpStream.status(reqid, STATUS_CODE.FAILURE, error.message);
+                }
 
-            handle.writeUInt32BE(reqid, 0, true);
+                directories[fd] = {
+                  path: directory,
+                  read: false
+                };
 
-            sftpStream.handle(reqid, handle);
+                var handle = new Buffer(4);
+
+                handle.writeUInt32BE(fd, 0, true);
+
+                sftpStream.handle(reqid, handle);
+              });
+            });
           });
 
           sftpStream.on('READDIR', function (reqid, handle) {
-            if (handle.length !== 4 || !handles.hasOwnProperty(handle.readUInt32BE(0, true))) {
+            var fd = handle.readUInt32BE(0, true);
+
+            if (!directories.hasOwnProperty(fd)) {
               return sftpStream.status(reqid, STATUS_CODE.FAILURE);
             }
 
-            var data = handles[handle.readUInt32BE(0, true)];
+            if (directories[fd].read === false) {
+              directories[fd].read = true;
 
-            if (data.read === false) {
-              data.read = true;
-              return sftpStream.name(reqid, data.files);
+              server.fs.readdir(directories[fd].path, function (error, files) {
+                if (error) {
+                  return sftpStream.status(reqid, STATUS_CODE.FAILURE, error.message);
+                }
+
+                return sftpStream.name(reqid, files.map(function (file) {
+                  return {filename: file};
+                }));
+              });
             }
 
             return sftpStream.status(reqid, STATUS_CODE.EOF);
           });
 
           sftpStream.on('RMDIR', function (reqid, directory) {
-            if (!server.files.hasOwnProperty(directory)) {
-              return sftpStream.status(reqid, STATUS_CODE.NO_SUCH_FILE);
-            }
+            server.fs.rmdir(directory, function (error) {
+              if (error) {
+                if (error.code === 'ENOENT') {
+                  return sftpStream.status(reqid, STATUS_CODE.NO_SUCH_FILE);
+                }
 
-            if (!Array.isArray(server.files[directory])) {
-              return sftpStream.status(reqid, STATUS_CODE.FAILURE);
-            }
+                return sftpStream.status(reqid, STATUS_CODE.FAILURE, error.message);
+              }
 
-            delete server.files[directory];
-
-            return sftpStream.status(reqid, STATUS_CODE.OK);
+              return sftpStream.status(reqid, STATUS_CODE.OK);
+            });
           });
 
           sftpStream.on('REMOVE', function (reqid, filepath) {
-            if (!server.files.hasOwnProperty(filepath)) {
-              return sftpStream.status(reqid, STATUS_CODE.NO_SUCH_FILE);
-            }
+            server.fs.unlink(filepath, function (error) {
+              if (error) {
+                if (error.code === 'ENOENT') {
+                  return sftpStream.status(reqid, STATUS_CODE.NO_SUCH_FILE);
+                }
 
-            if (!Buffer.isBuffer(server.files[filepath])) {
-              return sftpStream.status(reqid, STATUS_CODE.FAILURE);
-            }
+                return sftpStream.status(reqid, STATUS_CODE.FAILURE, error.message);
+              }
 
-            delete server.files[filepath];
-
-            return sftpStream.status(reqid, STATUS_CODE.OK);
+              return sftpStream.status(reqid, STATUS_CODE.OK);
+            });
           });
 
           sftpStream.on('CLOSE', function (reqid, handle) {
             var fd = handle.readUInt32BE(0, true);
 
-            // TODO: Remove legacy virtual FS
-            if (handles.hasOwnProperty(fd)) {
-              delete handles[fd];
-              return sftpStream.status(reqid, STATUS_CODE.OK);
+            if (directories.hasOwnProperty(fd)) {
+              delete directories[fd];
             }
 
             server.fs.close(fd, function (error) {

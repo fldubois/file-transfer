@@ -62,7 +62,7 @@ describe('Scenario: Delete a directory', function () {
         return done(error);
       }
 
-      expect(server.files).to.deep.equal({});
+      expect(server.fs.files).to.deep.equal({});
 
       return done();
     });

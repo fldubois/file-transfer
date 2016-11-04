@@ -22,9 +22,7 @@ describe('Scenario: List files of a directory', function () {
       username: 'foo',
       password: 'bar',
       files:    {
-        'path/to/dir': directory.map(function (filename) {
-          return {filename: filename};
-        })
+        'path/to/dir': directory
       }
     }, function (error, _server) {
       if (error) {

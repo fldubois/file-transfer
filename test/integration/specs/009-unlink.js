@@ -54,7 +54,7 @@ describe('Scenario: Delete a file', function () {
         return done(error);
       }
 
-      expect(server.files).to.deep.equal({});
+      expect(server.fs.files).to.deep.equal({});
 
       return done();
     });
