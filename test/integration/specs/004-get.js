@@ -22,7 +22,11 @@ describe('Scenario: Get a file', function () {
       username: 'foo',
       password: 'bar',
       files:    {
-        'path/to/file.txt': new Buffer('Hello, world !', 'utf8')
+        path: {
+          to: {
+            'file.txt': new Buffer('Hello, world !', 'utf8')
+          }
+        }
       }
     }, function (error, _server) {
       if (error) {

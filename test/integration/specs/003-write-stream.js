@@ -16,7 +16,13 @@ describe('Scenario: Write file with a stream', function () {
       username: 'foo',
       password: 'bar',
       files:    {
-        'path/to/existing/file.txt': new Buffer('Hello, world !', 'utf8')
+        path: {
+          to: {
+            existing: {
+              'file.txt': new Buffer('Hello, world !', 'utf8')
+            }
+          }
+        }
       }
     }, function (error, _server) {
       if (error) {
@@ -63,8 +69,8 @@ describe('Scenario: Write file with a stream', function () {
           return done(error);
         }
 
-        expect(server.fs.files).to.include.keys(filepath);
-        expect(server.fs.files[filepath].toString()).to.equal('Hello, friend.');
+        expect(server.fs.get(filepath)).to.be.an('object');
+        expect(server.fs.get(filepath).toString()).to.equal('Hello, friend.');
 
         return done();
       });

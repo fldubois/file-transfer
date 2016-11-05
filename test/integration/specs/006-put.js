@@ -60,8 +60,8 @@ describe('Scenario: Get a file', function () {
   });
 
   it('should write the file on server', function () {
-    expect(server.fs.files).to.include.keys(remote);
-    expect(server.fs.files[remote].toString()).to.equal('Hello, world !');
+    expect(server.fs.get(remote)).to.be.an('object');
+    expect(server.fs.get(remote).toString()).to.equal('Hello, world !');
   });
 
   it('should return errors', function (done) {

@@ -1,15 +1,13 @@
 'use strict';
 
+var get   = require('lodash.get');
+var set   = require('lodash.set');
+var unset = require('lodash.unset');
+
 function VirtualFS(files) {
   this.files   = files || {};
   this.handles = {};
   this.next    = 0;
-
-  Object.keys(this.files).forEach(function (path) {
-    if (typeof this.files[path] === 'string') {
-      this.files[path] = new Buffer(this.files[path], 'utf8');
-    }
-  }, this);
 }
 
 VirtualFS.prototype.open = function (path, flags, mode, callback) {
@@ -25,7 +23,9 @@ VirtualFS.prototype.open = function (path, flags, mode, callback) {
     return callback(new Error('Unknown file open flag: ' + flags));
   }
 
-  if (flags.indexOf('r') !== -1 && !this.files.hasOwnProperty(path)) {
+  var file = get(this.files, path.split('/'), null);
+
+  if (flags.indexOf('r') !== -1 && file === null) {
     error = new Error('ENOENT, open \'' + path + '\'');
 
     error.errno = 34;
@@ -35,7 +35,7 @@ VirtualFS.prototype.open = function (path, flags, mode, callback) {
     return callback(error);
   }
 
-  if (flags.indexOf('x') !== -1 && this.files.hasOwnProperty(path)) {
+  if (flags.indexOf('x') !== -1 && file !== null) {
     error = new Error('EEXIST, open \'' + path + '\'');
 
     error.errno = 47;
@@ -45,8 +45,8 @@ VirtualFS.prototype.open = function (path, flags, mode, callback) {
     return callback(error);
   }
 
-  if (flags.indexOf('w') !== -1 || (flags.indexOf('a') !== -1 && !this.files.hasOwnProperty(path))) {
-    this.files[path] = new Buffer(0);
+  if (flags.indexOf('w') !== -1 || (flags.indexOf('a') !== -1 && file === null)) {
+    set(this.files, path.split('/'), new Buffer(0));
   }
 
   var fd = this.next++;
@@ -57,7 +57,9 @@ VirtualFS.prototype.open = function (path, flags, mode, callback) {
 };
 
 VirtualFS.prototype.stat = function (path, callback) {
-  if (!this.files.hasOwnProperty(path)) {
+  var file = get(this.files, path.split('/'), null);
+
+  if (file === null) {
     var error = new Error('ENOENT, stat \'' + path + '\'');
 
     error.errno = 34;
@@ -74,7 +76,7 @@ VirtualFS.prototype.stat = function (path, callback) {
     mode:  '666',
     uid:   0,
     gid:   0,
-    size:  Buffer.isBuffer(this.files[path]) ? this.files[path].length : 0,
+    size:  Buffer.isBuffer(file) ? file.length : 0,
     atime: now,
     mtime: now
   };
@@ -93,7 +95,7 @@ VirtualFS.prototype.read = function (fd, buffer, offset, length, position, callb
   }
 
   var path = this.handles[fd];
-  var file = this.files[path];
+  var file = get(this.files, path.split('/'), null);
 
   if (offset > file.length) {
     return callback(null, 0, null);
@@ -117,20 +119,21 @@ VirtualFS.prototype.write = function (fd, buffer, offset, length, position, call
   }
 
   var path = this.handles[fd];
-  var file = this.files[path];
+  var file = get(this.files, path.split('/'), null);
 
   var newFile = new Buffer(Math.max(file.length, offset + buffer.length));
 
   file.copy(newFile);
   buffer.copy(newFile, offset);
 
-  this.files[path] = newFile;
+  set(this.files, path.split('/'), newFile);
 
   return callback(null, buffer.length, buffer);
 };
 
 VirtualFS.prototype.mkdir = function (path, mode, callback) {
   var error = null;
+  var file  = get(this.files, path.split('/'), null);
 
   if (typeof mode === 'function') {
     callback = mode;
@@ -139,7 +142,8 @@ VirtualFS.prototype.mkdir = function (path, mode, callback) {
 
   mode = mode || parseInt('666', 8);
 
-  if (this.files.hasOwnProperty(path)) {
+
+  if (file !== null) {
     error = new Error('EEXIST, mkdir \'' + path + '\'');
 
     error.errno = 47;
@@ -149,17 +153,16 @@ VirtualFS.prototype.mkdir = function (path, mode, callback) {
     return callback(error);
   }
 
-  this.files[path] = {
-    '.': {mode: mode}
-  };
+  set(this.files, path.split('/'), {'.': {mode: mode}});
 
   return callback(null);
 };
 
 VirtualFS.prototype.readdir = function (path, callback) {
   var error = null;
+  var file  = get(this.files, path.split('/'), null);
 
-  if (!this.files.hasOwnProperty(path)) {
+  if (file === null) {
     error = new Error('ENOENT, readdir \'' + path + '\'');
 
     error.errno = 34;
@@ -169,7 +172,7 @@ VirtualFS.prototype.readdir = function (path, callback) {
     return callback(error);
   }
 
-  if (Buffer.isBuffer(this.files[path])) {
+  if (Buffer.isBuffer(file)) {
     error = new Error('ENOTDIR,, readdir \'' + path + '\'');
 
     error.errno = 27;
@@ -179,13 +182,14 @@ VirtualFS.prototype.readdir = function (path, callback) {
     return callback(error);
   }
 
-  return callback(null, this.files[path]);
+  return callback(null, Object.keys(file));
 };
 
 VirtualFS.prototype.rmdir = function (path, callback) {
   var error = null;
+  var file  = get(this.files, path.split('/'), null);
 
-  if (!this.files.hasOwnProperty(path)) {
+  if (file === null) {
     error = new Error('ENOENT, rmdir \'' + path + '\'');
 
     error.errno = 34;
@@ -195,7 +199,7 @@ VirtualFS.prototype.rmdir = function (path, callback) {
     return callback(error);
   }
 
-  if (Buffer.isBuffer(this.files[path])) {
+  if (Buffer.isBuffer(file)) {
     error = new Error('ENOTDIR, rmdir \'' + path + '\'');
 
     error.errno = 27;
@@ -205,15 +209,16 @@ VirtualFS.prototype.rmdir = function (path, callback) {
     return callback(error);
   }
 
-  delete this.files[path];
+  unset(this.files, path.split('/'));
 
   return callback(null);
 };
 
 VirtualFS.prototype.unlink = function (path, callback) {
   var error = null;
+  var file  = get(this.files, path.split('/'), null);
 
-  if (!this.files.hasOwnProperty(path)) {
+  if (file === null) {
     error = new Error('ENOENT, unlink \'' + path + '\'');
 
     error.errno = 34;
@@ -223,7 +228,7 @@ VirtualFS.prototype.unlink = function (path, callback) {
     return callback(error);
   }
 
-  if (!Buffer.isBuffer(this.files[path])) {
+  if (!Buffer.isBuffer(file)) {
     error = new Error('EISDIR, unlink \'' + path + '\'');
 
     error.errno = 28;
@@ -233,7 +238,7 @@ VirtualFS.prototype.unlink = function (path, callback) {
     return callback(error);
   }
 
-  delete this.files[path];
+  unset(this.files, path.split('/'));
 
   return callback(null);
 };
@@ -251,6 +256,14 @@ VirtualFS.prototype.close = function (fd, callback) {
   delete this.handles[fd];
 
   return callback(null);
+};
+
+VirtualFS.prototype.get = function (path) {
+  return get(this.files, path.split('/'), null);
+};
+
+VirtualFS.prototype.set = function (path, file) {
+  return set(this.files, path.split('/'), file);
 };
 
 module.exports = VirtualFS;

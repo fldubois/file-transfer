@@ -11,20 +11,18 @@ describe('Scenario: Delete a directory', function () {
   var server = null;
   var client = null;
 
-  var directory = [
-    'fileA.txt',
-    'fileB.js',
-    'fileC.txt'
-  ];
-
   before('start the server', function (done) {
     sftpd({
       username: 'foo',
       password: 'bar',
       files:    {
-        'path/to/dir': directory.map(function (filename) {
-          return {filename: filename};
-        })
+        path: {
+          to: {
+            dir: {
+              '.': {mode: parseInt(666, 8)}
+            }
+          }
+        }
       }
     }, function (error, _server) {
       if (error) {
@@ -57,12 +55,14 @@ describe('Scenario: Delete a directory', function () {
   });
 
   it('should delete the directory', function (done) {
-    client.rmdir('path/to/dir', function (error) {
+    var path = 'path/to/dir';
+
+    client.rmdir(path, function (error) {
       if (error) {
         return done(error);
       }
 
-      expect(server.fs.files).to.deep.equal({});
+      expect(server.fs.get(path)).to.equal(null);
 
       return done();
     });

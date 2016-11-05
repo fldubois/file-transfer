@@ -16,7 +16,11 @@ describe('Scenario: Delete a file', function () {
       username: 'foo',
       password: 'bar',
       files:    {
-        'path/to/file.txt': new Buffer('Hello, world !', 'utf8')
+        path: {
+          to: {
+            'file.txt': new Buffer('Hello, world !', 'utf8')
+          }
+        }
       }
     }, function (error, _server) {
       if (error) {
@@ -49,12 +53,14 @@ describe('Scenario: Delete a file', function () {
   });
 
   it('should delete the file', function (done) {
-    client.unlink('path/to/file.txt', function (error) {
+    var path = 'path/to/file.txt';
+
+    client.unlink(path, function (error) {
       if (error) {
         return done(error);
       }
 
-      expect(server.fs.files).to.deep.equal({});
+      expect(server.fs.get(path)).to.equal(null);
 
       return done();
     });

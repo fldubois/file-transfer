@@ -53,8 +53,8 @@ describe('Scenario: Create a directory', function () {
         return done(error);
       }
 
-      expect(server.fs.files).to.include.keys(path);
-      expect(server.fs.files[path]['.']).to.be.an('object');
+      expect(server.fs.get(path)).to.be.an('object');
+      expect(server.fs.get(path)['.']).to.be.an('object');
 
       return done();
     });
@@ -68,9 +68,9 @@ describe('Scenario: Create a directory', function () {
         return done(error);
       }
 
-      expect(server.fs.files).to.include.keys(path);
-      expect(server.fs.files[path]['.']).to.be.an('object');
-      expect(server.fs.files[path]['.'].mode).to.equal(parseInt('700', 8));
+      expect(server.fs.get(path)).to.be.an('object');
+      expect(server.fs.get(path)['.']).to.be.an('object');
+      expect(server.fs.get(path)['.'].mode).to.equal(parseInt('700', 8));
 
       return done();
     });

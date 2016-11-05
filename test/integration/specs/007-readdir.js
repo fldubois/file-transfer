@@ -22,7 +22,16 @@ describe('Scenario: List files of a directory', function () {
       username: 'foo',
       password: 'bar',
       files:    {
-        'path/to/dir': directory
+        path: {
+          to: {
+            dir: {
+              '.':         {mode: parseInt(666, 8)},
+              'fileA.txt': new Buffer(0),
+              'fileB.js':  new Buffer(0),
+              'fileC.txt': new Buffer(0)
+            }
+          }
+        }
       }
     }, function (error, _server) {
       if (error) {
