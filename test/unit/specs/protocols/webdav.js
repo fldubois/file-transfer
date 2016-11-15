@@ -98,4 +98,86 @@ describe('protocols/webdav', function () {
 
   });
 
+  describe('createReadStream()', function () {
+
+    it('should return a read stream', function (done) {
+      nock('http://www.example.com')
+        .intercept('/webdav', 'OPTIONS')
+        .basicAuth(options.credentials)
+        .reply(200);
+
+      var scope = nock('http://www.example.com')
+        .get('/webdav/file.txt')
+        .basicAuth(options.credentials)
+        .reply(200, 'Hello, friend.');
+
+      var webdav = new WebDAVClient(options);
+
+      webdav.once('ready', function () {
+        var stream  = webdav.createReadStream('file.txt');
+        var content = '';
+
+        stream.on('data', function (data) {
+          content += data.toString();
+        });
+
+        stream.on('error', function (error) {
+          return done(error);
+        });
+
+        stream.on('end', function () {
+          expect(scope.isDone()).to.equal(true);
+          expect(content).to.equal('Hello, friend.');
+          return done();
+        });
+      });
+
+      webdav.once('error', function (error) {
+        return done(error);
+      });
+
+      webdav.connect();
+    });
+
+    it('should return an error on request error', function (done) {
+      nock('http://www.example.com')
+        .intercept('/webdav', 'OPTIONS')
+        .basicAuth(options.credentials)
+        .reply(200);
+
+      var scope = nock('http://www.example.com')
+        .get('/webdav/file.txt')
+        .basicAuth(options.credentials)
+        .reply(404);
+
+      var webdav = new WebDAVClient(options);
+
+      webdav.once('ready', function () {
+        var stream = webdav.createReadStream('file.txt');
+
+        stream.on('data', function () {
+          return done(new Error('Read stream created with request error'));
+        });
+
+        stream.on('error', function (error) {
+          expect(scope.isDone()).to.equal(true);
+
+          expect(error).to.be.an('error');
+          expect(error.message).to.equal('WebDAV request error');
+          expect(error.statusCode).to.equal(404);
+          expect(error.statusMessage).to.equal('Not Found');
+
+          return done();
+        });
+
+        stream.on('end', function () {
+          return done(new Error('Read stream created with request error'));
+        });
+      });
+
+      webdav.connect();
+    });
+
+  });
+
 });
