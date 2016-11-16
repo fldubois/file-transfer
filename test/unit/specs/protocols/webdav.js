@@ -121,9 +121,7 @@ describe('protocols/webdav', function () {
           content += data.toString();
         });
 
-        stream.on('error', function (error) {
-          return done(error);
-        });
+        stream.on('error', done);
 
         stream.on('end', function () {
           expect(scope.isDone()).to.equal(true);
@@ -172,6 +170,72 @@ describe('protocols/webdav', function () {
 
         stream.on('end', function () {
           return done(new Error('Read stream created with request error'));
+        });
+      });
+
+      webdav.connect();
+    });
+
+  });
+
+  describe('createWriteStream()', function () {
+
+    it('should return a read stream', function (done) {
+      nock('http://www.example.com')
+        .intercept('/webdav', 'OPTIONS')
+        .basicAuth(options.credentials)
+        .reply(200);
+
+      var scope = nock('http://www.example.com')
+        .put('/webdav/file.txt', 'Hello, friend.')
+        .basicAuth(options.credentials)
+        .reply(200);
+
+      var webdav = new WebDAVClient(options);
+
+      webdav.once('ready', function () {
+        var stream  = webdav.createWriteStream('file.txt');
+
+        stream.on('error', done);
+
+        stream.on('end', function () {
+          expect(scope.isDone()).to.equal(true);
+          return done();
+        });
+
+        stream.end('Hello, friend.', 'utf8');
+      });
+
+      webdav.once('error', done);
+
+      webdav.connect();
+    });
+
+    it('should return an error on request error', function (done) {
+      nock('http://www.example.com')
+        .intercept('/webdav', 'OPTIONS')
+        .basicAuth(options.credentials)
+        .reply(200);
+
+      var scope = nock('http://www.example.com')
+        .put('/webdav/file.txt')
+        .basicAuth(options.credentials)
+        .reply(401);
+
+      var webdav = new WebDAVClient(options);
+
+      webdav.once('ready', function () {
+        var stream = webdav.createWriteStream('file.txt');
+
+        stream.on('error', function (error) {
+          expect(scope.isDone()).to.equal(true);
+
+          expect(error).to.be.an('error');
+          expect(error.message).to.equal('WebDAV request error');
+          expect(error.statusCode).to.equal(401);
+          expect(error.statusMessage).to.equal('Unauthorized');
+
+          return done();
         });
       });
 
