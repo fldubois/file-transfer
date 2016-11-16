@@ -1,5 +1,8 @@
 'use strict';
 
+var os = require('os');
+var fs = require('fs');
+
 var chai   = require('chai');
 var expect = chai.expect;
 var nock   = require('nock');
@@ -234,6 +237,80 @@ describe('protocols/webdav', function () {
           expect(error.message).to.equal('WebDAV request error');
           expect(error.statusCode).to.equal(401);
           expect(error.statusMessage).to.equal('Unauthorized');
+
+          return done();
+        });
+      });
+
+      webdav.connect();
+    });
+
+  });
+
+  describe('get()', function () {
+
+    it('should download the file via the SFTP connection', function (done) {
+      nock('http://www.example.com')
+        .intercept('/webdav', 'OPTIONS')
+        .basicAuth(options.credentials)
+        .reply(200);
+
+      var scope = nock('http://www.example.com')
+        .get('/webdav/file.txt')
+        .basicAuth(options.credentials)
+        .reply(200, 'Hello, friend.');
+
+      var webdav = new WebDAVClient(options);
+      var path   = os.tmpdir() + '/' + Date.now() + '.txt';
+
+      webdav.once('ready', function () {
+        webdav.get('file.txt', path, function (error) {
+          if (error) {
+            return done(error);
+          }
+
+          fs.readFile(path, 'utf8', function (error, content) {
+            if (error) {
+              return done(error);
+            }
+
+            expect(scope.isDone()).to.equal(true);
+            expect(content).to.equal('Hello, friend.');
+
+            fs.unlink(path, done);
+          });
+        });
+      });
+
+      webdav.once('error', function (error) {
+        return done(error);
+      });
+
+      webdav.connect();
+    });
+
+    it('should return an error on request error', function (done) {
+      nock('http://www.example.com')
+        .intercept('/webdav', 'OPTIONS')
+        .basicAuth(options.credentials)
+        .reply(200);
+
+      var scope = nock('http://www.example.com')
+        .get('/webdav/file.txt')
+        .basicAuth(options.credentials)
+        .reply(404);
+
+      var webdav = new WebDAVClient(options);
+      var path   = os.tmpdir() + '/' + Date.now() + '.txt';
+
+      webdav.once('ready', function () {
+        webdav.get('file.txt', path, function (error) {
+          expect(scope.isDone()).to.equal(true);
+
+          expect(error).to.be.an('error');
+          expect(error.message).to.equal('WebDAV request error');
+          expect(error.statusCode).to.equal(404);
+          expect(error.statusMessage).to.equal('Not Found');
 
           return done();
         });
