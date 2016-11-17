@@ -249,7 +249,7 @@ describe('protocols/webdav', function () {
 
   describe('get()', function () {
 
-    it('should download the file via the SFTP connection', function (done) {
+    it('should download the file', function (done) {
       nock('http://www.example.com')
         .intercept('/webdav', 'OPTIONS')
         .basicAuth(options.credentials)
@@ -386,6 +386,89 @@ describe('protocols/webdav', function () {
       });
 
       webdav.connect();
+    });
+
+  });
+
+  describe('put()', function () {
+
+    it('should upload the file', function (done) {
+      nock('http://www.example.com')
+        .intercept('/webdav', 'OPTIONS')
+        .basicAuth(options.credentials)
+        .reply(200);
+
+      var scope = nock('http://www.example.com')
+        .put('/webdav/file.txt', 'Hello, friend.')
+        .basicAuth(options.credentials)
+        .reply(200);
+
+      var webdav = new WebDAVClient(options);
+      var path   = os.tmpdir() + '/' + Date.now() + '.txt';
+
+      fs.writeFile(path, 'Hello, friend.', 'utf8', function (error) {
+        if (error) {
+          return done(error);
+        }
+
+        webdav.once('ready', function () {
+          webdav.put(path, 'file.txt', function (error) {
+            if (error) {
+              return done(error);
+            }
+
+            expect(scope.isDone()).to.equal(true);
+
+            fs.unlink(path, done);
+          });
+        });
+
+        webdav.once('error', function (error) {
+          return done(error);
+        });
+
+        webdav.connect();
+      });
+    });
+
+    it('should return an error on request error', function (done) {
+      nock('http://www.example.com')
+        .intercept('/webdav', 'OPTIONS')
+        .basicAuth(options.credentials)
+        .reply(200);
+
+      var scope = nock('http://www.example.com')
+        .put('/webdav/file.txt', 'Hello, friend.')
+        .basicAuth(options.credentials)
+        .reply(400);
+
+      var webdav = new WebDAVClient(options);
+      var path   = os.tmpdir() + '/' + Date.now() + '.txt';
+
+      fs.writeFile(path, 'Hello, friend.', 'utf8', function (error) {
+        if (error) {
+          return done(error);
+        }
+
+        webdav.once('ready', function () {
+          webdav.put(path, 'file.txt', function (error) {
+            expect(scope.isDone()).to.equal(true);
+
+            expect(error).to.be.an('error');
+            expect(error.message).to.equal('WebDAV request error');
+            expect(error.statusCode).to.equal(400);
+            expect(error.statusMessage).to.equal('Bad Request');
+
+            fs.unlink(path, done);
+          });
+        });
+
+        webdav.once('error', function (error) {
+          return done(error);
+        });
+
+        webdav.connect();
+      });
     });
 
   });
