@@ -473,4 +473,141 @@ describe('protocols/webdav', function () {
 
   });
 
+  describe('readdir()', function () {
+
+    it('should return a list of filenames', function (done) {
+      nock('http://www.example.com')
+        .intercept('/webdav', 'OPTIONS')
+        .basicAuth(options.credentials)
+        .reply(200);
+
+      var headers = {
+        'Content-Type': 'text/xml',
+        'Depth':        1
+      };
+
+      var scope = nock('http://www.example.com', headers)
+        .intercept('/webdav/dir', 'PROPFIND')
+        .basicAuth(options.credentials)
+        .reply(200, [
+          '<?xml version="1.0" encoding="utf-8"?>',
+          '<D:multistatus xmlns:D="DAV:">',
+          '  <D:response xmlns:lp2="http://apache.org/dav/props/" xmlns:lp1="DAV:">',
+          '    <D:href>/webdav/dir/</D:href>',
+          '  </D:response>',
+          '  <D:response xmlns:lp2="http://apache.org/dav/props/" xmlns:lp1="DAV:">',
+          '    <D:href>/webdav/dir/</D:href>',
+          '  </D:response>',
+          '  <D:response xmlns:lp2="http://apache.org/dav/props/" xmlns:lp1="DAV:">',
+          '    <D:href>/webdav/dir/subdir/</D:href>',
+          '  </D:response>',
+          '  <D:response xmlns:lp2="http://apache.org/dav/props/" xmlns:lp1="DAV:">',
+          '    <D:href>/webdav/dir/file1.txt</D:href>',
+          '  </D:response>',
+          '  <D:response xmlns:lp2="http://apache.org/dav/props/" xmlns:lp1="DAV:">',
+          '    <D:href>/webdav/dir/file2.txt</D:href>',
+          '  </D:response>',
+          '</D:multistatus>'
+        ].join('\n'));
+
+      var webdav = new WebDAVClient(options);
+
+      webdav.once('ready', function () {
+        webdav.readdir('dir', function (error, files) {
+          if (error) {
+            return done(error);
+          }
+
+          expect(scope.isDone()).to.equal(true);
+
+          expect(files).to.be.an('array');
+          expect(files).to.deep.equal(['subdir', 'file1.txt', 'file2.txt']);
+
+          return done();
+        });
+      });
+
+      webdav.once('error', function (error) {
+        return done(error);
+      });
+
+      webdav.connect();
+    });
+
+    it('should return an error on request error', function (done) {
+      nock('http://www.example.com')
+        .intercept('/webdav', 'OPTIONS')
+        .basicAuth(options.credentials)
+        .reply(200);
+
+      var headers = {
+        'Content-Type': 'text/xml',
+        'Depth':        1
+      };
+
+      var scope = nock('http://www.example.com', headers)
+        .intercept('/webdav/dir', 'PROPFIND')
+        .basicAuth(options.credentials)
+        .reply(400);
+
+      var webdav = new WebDAVClient(options);
+
+      webdav.once('ready', function () {
+        webdav.readdir('dir', function (error) {
+          expect(scope.isDone()).to.equal(true);
+
+          expect(error).to.be.an('error');
+          expect(error.message).to.equal('WebDAV request error');
+          expect(error.statusCode).to.equal(400);
+          expect(error.statusMessage).to.equal('Bad Request');
+
+          return done();
+        });
+      });
+
+      webdav.once('error', function (error) {
+        return done(error);
+      });
+
+      webdav.connect();
+    });
+
+    it('should return an error on bad XML response', function (done) {
+      nock('http://www.example.com')
+        .intercept('/webdav', 'OPTIONS')
+        .basicAuth(options.credentials)
+        .reply(200);
+
+      var headers = {
+        'Content-Type': 'text/xml',
+        'Depth':        1
+      };
+
+      var scope = nock('http://www.example.com', headers)
+        .intercept('/webdav/dir', 'PROPFIND')
+        .basicAuth(options.credentials)
+        .reply(200, 'Not an XML');
+
+      var webdav = new WebDAVClient(options);
+
+      webdav.once('ready', function () {
+        webdav.readdir('dir', function (error) {
+          expect(scope.isDone()).to.equal(true);
+
+          expect(error).to.be.an('error');
+          expect(error.message.split('\n')[0]).to.equal('Non-whitespace before first tag.');
+
+          return done();
+        });
+      });
+
+      webdav.once('error', function (error) {
+        return done(error);
+      });
+
+      webdav.connect();
+    });
+
+  });
+
 });
