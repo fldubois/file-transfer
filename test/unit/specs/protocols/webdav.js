@@ -321,7 +321,7 @@ describe('protocols/webdav', function () {
 
   });
 
-  describe('mkir()', function () {
+  describe('mkdir()', function () {
 
     it('should send a MKCOL request', function (done) {
       nock('http://www.example.com')
@@ -596,6 +596,75 @@ describe('protocols/webdav', function () {
 
           expect(error).to.be.an('error');
           expect(error.message.split('\n')[0]).to.equal('Non-whitespace before first tag.');
+
+          return done();
+        });
+      });
+
+      webdav.once('error', function (error) {
+        return done(error);
+      });
+
+      webdav.connect();
+    });
+
+  });
+
+  describe('rmdir()', function () {
+
+    it('should delete the WebDAC collection', function (done) {
+      nock('http://www.example.com')
+        .intercept('/webdav', 'OPTIONS')
+        .basicAuth(options.credentials)
+        .reply(200);
+
+      var scope = nock('http://www.example.com', {Depth: 'infinity'})
+        .delete('/webdav/path/to/directory/')
+        .basicAuth(options.credentials)
+        .reply(201);
+
+      var webdav = new WebDAVClient(options);
+
+      webdav.once('ready', function () {
+        webdav.rmdir('path/to/directory', function (error) {
+          if (error) {
+            return done(error);
+          }
+
+          expect(scope.isDone()).to.equal(true);
+
+          return done();
+        });
+      });
+
+      webdav.once('error', function (error) {
+        return done(error);
+      });
+
+      webdav.connect();
+    });
+
+    it('should return an error on request error', function (done) {
+      nock('http://www.example.com')
+        .intercept('/webdav', 'OPTIONS')
+        .basicAuth(options.credentials)
+        .reply(200);
+
+      var scope = nock('http://www.example.com', {Depth: 'infinity'})
+        .delete('/webdav/path/to/directory/')
+        .basicAuth(options.credentials)
+        .reply(400);
+
+      var webdav = new WebDAVClient(options);
+
+      webdav.once('ready', function () {
+        webdav.rmdir('path/to/directory', function (error) {
+          expect(scope.isDone()).to.equal(true);
+
+          expect(error).to.be.an('error');
+          expect(error.message).to.equal('WebDAV request error');
+          expect(error.statusCode).to.equal(400);
+          expect(error.statusMessage).to.equal('Bad Request');
 
           return done();
         });
