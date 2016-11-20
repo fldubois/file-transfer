@@ -658,7 +658,7 @@ describe('protocols/webdav', function () {
       var webdav = new WebDAVClient(options);
 
       webdav.once('ready', function () {
-        webdav.rmdir('path/to/directory', function (error) {
+        webdav.rmdir('path/to/directory/', function (error) {
           expect(scope.isDone()).to.equal(true);
 
           expect(error).to.be.an('error');
@@ -679,4 +679,72 @@ describe('protocols/webdav', function () {
 
   });
 
+  describe('unlink()', function () {
+
+    it('should delete the WebDAC collection', function (done) {
+      nock('http://www.example.com')
+        .intercept('/webdav', 'OPTIONS')
+        .basicAuth(options.credentials)
+        .reply(200);
+
+      var scope = nock('http://www.example.com')
+        .delete('/webdav/path/to/file.txt')
+        .basicAuth(options.credentials)
+        .reply(201);
+
+      var webdav = new WebDAVClient(options);
+
+      webdav.once('ready', function () {
+        webdav.unlink('path/to/file.txt', function (error) {
+          if (error) {
+            return done(error);
+          }
+
+          expect(scope.isDone()).to.equal(true);
+
+          return done();
+        });
+      });
+
+      webdav.once('error', function (error) {
+        return done(error);
+      });
+
+      webdav.connect();
+    });
+
+    it('should return an error on request error', function (done) {
+      nock('http://www.example.com')
+        .intercept('/webdav', 'OPTIONS')
+        .basicAuth(options.credentials)
+        .reply(200);
+
+      var scope = nock('http://www.example.com')
+        .delete('/webdav/path/to/file.txt')
+        .basicAuth(options.credentials)
+        .reply(400);
+
+      var webdav = new WebDAVClient(options);
+
+      webdav.once('ready', function () {
+        webdav.unlink('path/to/file.txt', function (error) {
+          expect(scope.isDone()).to.equal(true);
+
+          expect(error).to.be.an('error');
+          expect(error.message).to.equal('WebDAV request error');
+          expect(error.statusCode).to.equal(400);
+          expect(error.statusMessage).to.equal('Bad Request');
+
+          return done();
+        });
+      });
+
+      webdav.once('error', function (error) {
+        return done(error);
+      });
+
+      webdav.connect();
+    });
+
+  });
 });
