@@ -747,4 +747,34 @@ describe('protocols/webdav', function () {
     });
 
   });
+
+  describe('disconnect()', function () {
+
+    it('should return null', function (done) {
+      nock('http://www.example.com')
+        .intercept('/webdav', 'OPTIONS')
+        .basicAuth(options.credentials)
+        .reply(200);
+
+      var webdav = new WebDAVClient(options);
+
+      webdav.once('ready', function () {
+        expect(webdav.disconnect()).to.equal(null);
+
+        return done();
+      });
+
+      webdav.once('error', function (error) {
+        return done(error);
+      });
+
+      webdav.connect();
+    });
+
+  });
+
+  after('enable unmocked HTTP requests', function () {
+    nock.enableNetConnect();
+  });
+
 });
