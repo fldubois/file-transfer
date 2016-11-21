@@ -17,6 +17,25 @@ var options = {
   }
 };
 
+function createClient(callback) {
+  nock('http://www.example.com')
+    .intercept('/webdav', 'OPTIONS')
+    .basicAuth(options.credentials)
+    .reply(200);
+
+  var webdav = new WebDAVClient(options);
+
+  webdav.once('ready', function () {
+    return callback(null, webdav);
+  });
+
+  webdav.once('error', function (error) {
+    return callback(error);
+  });
+
+  webdav.connect();
+}
+
 describe('protocols/webdav', function () {
 
   before('disable unmocked HTTP requests', function () {
@@ -104,19 +123,16 @@ describe('protocols/webdav', function () {
   describe('createReadStream()', function () {
 
     it('should return a read stream', function (done) {
-      nock('http://www.example.com')
-        .intercept('/webdav', 'OPTIONS')
-        .basicAuth(options.credentials)
-        .reply(200);
-
       var scope = nock('http://www.example.com')
         .get('/webdav/file.txt')
         .basicAuth(options.credentials)
         .reply(200, 'Hello, friend.');
 
-      var webdav = new WebDAVClient(options);
+      createClient(function (error, webdav) {
+        if (error) {
+          return done(error);
+        }
 
-      webdav.once('ready', function () {
         var stream  = webdav.createReadStream('file.txt');
         var content = '';
 
@@ -132,28 +148,19 @@ describe('protocols/webdav', function () {
           return done();
         });
       });
-
-      webdav.once('error', function (error) {
-        return done(error);
-      });
-
-      webdav.connect();
     });
 
     it('should return an error on request error', function (done) {
-      nock('http://www.example.com')
-        .intercept('/webdav', 'OPTIONS')
-        .basicAuth(options.credentials)
-        .reply(200);
-
       var scope = nock('http://www.example.com')
         .get('/webdav/file.txt')
         .basicAuth(options.credentials)
         .reply(404);
 
-      var webdav = new WebDAVClient(options);
+      createClient(function (error, webdav) {
+        if (error) {
+          return done(error);
+        }
 
-      webdav.once('ready', function () {
         var stream = webdav.createReadStream('file.txt');
 
         stream.on('data', function () {
@@ -175,8 +182,6 @@ describe('protocols/webdav', function () {
           return done(new Error('Read stream created with request error'));
         });
       });
-
-      webdav.connect();
     });
 
   });
@@ -184,19 +189,16 @@ describe('protocols/webdav', function () {
   describe('createWriteStream()', function () {
 
     it('should return a read stream', function (done) {
-      nock('http://www.example.com')
-        .intercept('/webdav', 'OPTIONS')
-        .basicAuth(options.credentials)
-        .reply(200);
-
       var scope = nock('http://www.example.com')
         .put('/webdav/file.txt', 'Hello, friend.')
         .basicAuth(options.credentials)
         .reply(200);
 
-      var webdav = new WebDAVClient(options);
+      createClient(function (error, webdav) {
+        if (error) {
+          return done(error);
+        }
 
-      webdav.once('ready', function () {
         var stream  = webdav.createWriteStream('file.txt');
 
         stream.on('error', done);
@@ -208,26 +210,19 @@ describe('protocols/webdav', function () {
 
         stream.end('Hello, friend.', 'utf8');
       });
-
-      webdav.once('error', done);
-
-      webdav.connect();
     });
 
     it('should return an error on request error', function (done) {
-      nock('http://www.example.com')
-        .intercept('/webdav', 'OPTIONS')
-        .basicAuth(options.credentials)
-        .reply(200);
-
       var scope = nock('http://www.example.com')
         .put('/webdav/file.txt')
         .basicAuth(options.credentials)
         .reply(401);
 
-      var webdav = new WebDAVClient(options);
+      createClient(function (error, webdav) {
+        if (error) {
+          return done(error);
+        }
 
-      webdav.once('ready', function () {
         var stream = webdav.createWriteStream('file.txt');
 
         stream.on('error', function (error) {
@@ -241,8 +236,6 @@ describe('protocols/webdav', function () {
           return done();
         });
       });
-
-      webdav.connect();
     });
 
   });
@@ -250,20 +243,18 @@ describe('protocols/webdav', function () {
   describe('get()', function () {
 
     it('should download the file', function (done) {
-      nock('http://www.example.com')
-        .intercept('/webdav', 'OPTIONS')
-        .basicAuth(options.credentials)
-        .reply(200);
-
       var scope = nock('http://www.example.com')
         .get('/webdav/file.txt')
         .basicAuth(options.credentials)
         .reply(200, 'Hello, friend.');
 
-      var webdav = new WebDAVClient(options);
-      var path   = os.tmpdir() + '/' + Date.now() + '.txt';
+      createClient(function (error, webdav) {
+        if (error) {
+          return done(error);
+        }
 
-      webdav.once('ready', function () {
+        var path = os.tmpdir() + '/' + Date.now() + '.txt';
+
         webdav.get('file.txt', path, function (error) {
           if (error) {
             return done(error);
@@ -281,29 +272,21 @@ describe('protocols/webdav', function () {
           });
         });
       });
-
-      webdav.once('error', function (error) {
-        return done(error);
-      });
-
-      webdav.connect();
     });
 
     it('should return an error on request error', function (done) {
-      nock('http://www.example.com')
-        .intercept('/webdav', 'OPTIONS')
-        .basicAuth(options.credentials)
-        .reply(200);
-
       var scope = nock('http://www.example.com')
         .get('/webdav/file.txt')
         .basicAuth(options.credentials)
         .reply(404);
 
-      var webdav = new WebDAVClient(options);
-      var path   = os.tmpdir() + '/' + Date.now() + '.txt';
+      createClient(function (error, webdav) {
+        if (error) {
+          return done(error);
+        }
 
-      webdav.once('ready', function () {
+        var path = os.tmpdir() + '/' + Date.now() + '.txt';
+
         webdav.get('file.txt', path, function (error) {
           expect(scope.isDone()).to.equal(true);
 
@@ -315,8 +298,6 @@ describe('protocols/webdav', function () {
           return done();
         });
       });
-
-      webdav.connect();
     });
 
   });
@@ -324,19 +305,16 @@ describe('protocols/webdav', function () {
   describe('mkdir()', function () {
 
     it('should send a MKCOL request', function (done) {
-      nock('http://www.example.com')
-        .intercept('/webdav', 'OPTIONS')
-        .basicAuth(options.credentials)
-        .reply(200);
-
       var scope = nock('http://www.example.com')
         .intercept('/webdav/path/to/directory', 'MKCOL')
         .basicAuth(options.credentials)
         .reply(201);
 
-      var webdav = new WebDAVClient(options);
+      createClient(function (error, webdav) {
+        if (error) {
+          return done(error);
+        }
 
-      webdav.once('ready', function () {
         webdav.mkdir('path/to/directory', function (error) {
           if (error) {
             return done(error);
@@ -347,28 +325,19 @@ describe('protocols/webdav', function () {
           return done();
         });
       });
-
-      webdav.once('error', function (error) {
-        return done(error);
-      });
-
-      webdav.connect();
     });
 
     it('should return an error on request error', function (done) {
-      nock('http://www.example.com')
-        .intercept('/webdav', 'OPTIONS')
-        .basicAuth(options.credentials)
-        .reply(200);
-
       var scope = nock('http://www.example.com')
         .intercept('/webdav/path/to/directory', 'MKCOL')
         .basicAuth(options.credentials)
         .reply(400);
 
-      var webdav = new WebDAVClient(options);
+      createClient(function (error, webdav) {
+        if (error) {
+          return done(error);
+        }
 
-      webdav.once('ready', function () {
         webdav.mkdir('path/to/directory', function (error) {
           expect(scope.isDone()).to.equal(true);
 
@@ -380,12 +349,6 @@ describe('protocols/webdav', function () {
           return done();
         });
       });
-
-      webdav.once('error', function (error) {
-        return done(error);
-      });
-
-      webdav.connect();
     });
 
   });
@@ -393,25 +356,23 @@ describe('protocols/webdav', function () {
   describe('put()', function () {
 
     it('should upload the file', function (done) {
-      nock('http://www.example.com')
-        .intercept('/webdav', 'OPTIONS')
-        .basicAuth(options.credentials)
-        .reply(200);
-
       var scope = nock('http://www.example.com')
         .put('/webdav/file.txt', 'Hello, friend.')
         .basicAuth(options.credentials)
         .reply(200);
 
-      var webdav = new WebDAVClient(options);
-      var path   = os.tmpdir() + '/' + Date.now() + '.txt';
-
-      fs.writeFile(path, 'Hello, friend.', 'utf8', function (error) {
+      createClient(function (error, webdav) {
         if (error) {
           return done(error);
         }
 
-        webdav.once('ready', function () {
+        var path = os.tmpdir() + '/' + Date.now() + '.txt';
+
+        fs.writeFile(path, 'Hello, friend.', 'utf8', function (error) {
+          if (error) {
+            return done(error);
+          }
+
           webdav.put(path, 'file.txt', function (error) {
             if (error) {
               return done(error);
@@ -422,35 +383,27 @@ describe('protocols/webdav', function () {
             fs.unlink(path, done);
           });
         });
-
-        webdav.once('error', function (error) {
-          return done(error);
-        });
-
-        webdav.connect();
       });
     });
 
     it('should return an error on request error', function (done) {
-      nock('http://www.example.com')
-        .intercept('/webdav', 'OPTIONS')
-        .basicAuth(options.credentials)
-        .reply(200);
-
       var scope = nock('http://www.example.com')
         .put('/webdav/file.txt', 'Hello, friend.')
         .basicAuth(options.credentials)
         .reply(400);
 
-      var webdav = new WebDAVClient(options);
-      var path   = os.tmpdir() + '/' + Date.now() + '.txt';
-
-      fs.writeFile(path, 'Hello, friend.', 'utf8', function (error) {
+      createClient(function (error, webdav) {
         if (error) {
           return done(error);
         }
 
-        webdav.once('ready', function () {
+        var path = os.tmpdir() + '/' + Date.now() + '.txt';
+
+        fs.writeFile(path, 'Hello, friend.', 'utf8', function (error) {
+          if (error) {
+            return done(error);
+          }
+
           webdav.put(path, 'file.txt', function (error) {
             expect(scope.isDone()).to.equal(true);
 
@@ -462,12 +415,6 @@ describe('protocols/webdav', function () {
             fs.unlink(path, done);
           });
         });
-
-        webdav.once('error', function (error) {
-          return done(error);
-        });
-
-        webdav.connect();
       });
     });
 
@@ -476,11 +423,6 @@ describe('protocols/webdav', function () {
   describe('readdir()', function () {
 
     it('should return a list of filenames', function (done) {
-      nock('http://www.example.com')
-        .intercept('/webdav', 'OPTIONS')
-        .basicAuth(options.credentials)
-        .reply(200);
-
       var headers = {
         'Content-Type': 'text/xml',
         'Depth':        1
@@ -510,9 +452,11 @@ describe('protocols/webdav', function () {
           '</D:multistatus>'
         ].join('\n'));
 
-      var webdav = new WebDAVClient(options);
+      createClient(function (error, webdav) {
+        if (error) {
+          return done(error);
+        }
 
-      webdav.once('ready', function () {
         webdav.readdir('dir', function (error, files) {
           if (error) {
             return done(error);
@@ -526,20 +470,9 @@ describe('protocols/webdav', function () {
           return done();
         });
       });
-
-      webdav.once('error', function (error) {
-        return done(error);
-      });
-
-      webdav.connect();
     });
 
     it('should return an error on request error', function (done) {
-      nock('http://www.example.com')
-        .intercept('/webdav', 'OPTIONS')
-        .basicAuth(options.credentials)
-        .reply(200);
-
       var headers = {
         'Content-Type': 'text/xml',
         'Depth':        1
@@ -550,9 +483,11 @@ describe('protocols/webdav', function () {
         .basicAuth(options.credentials)
         .reply(400);
 
-      var webdav = new WebDAVClient(options);
+      createClient(function (error, webdav) {
+        if (error) {
+          return done(error);
+        }
 
-      webdav.once('ready', function () {
         webdav.readdir('dir', function (error) {
           expect(scope.isDone()).to.equal(true);
 
@@ -564,20 +499,9 @@ describe('protocols/webdav', function () {
           return done();
         });
       });
-
-      webdav.once('error', function (error) {
-        return done(error);
-      });
-
-      webdav.connect();
     });
 
     it('should return an error on bad XML response', function (done) {
-      nock('http://www.example.com')
-        .intercept('/webdav', 'OPTIONS')
-        .basicAuth(options.credentials)
-        .reply(200);
-
       var headers = {
         'Content-Type': 'text/xml',
         'Depth':        1
@@ -588,9 +512,11 @@ describe('protocols/webdav', function () {
         .basicAuth(options.credentials)
         .reply(200, 'Not an XML');
 
-      var webdav = new WebDAVClient(options);
+      createClient(function (error, webdav) {
+        if (error) {
+          return done(error);
+        }
 
-      webdav.once('ready', function () {
         webdav.readdir('dir', function (error) {
           expect(scope.isDone()).to.equal(true);
 
@@ -600,12 +526,6 @@ describe('protocols/webdav', function () {
           return done();
         });
       });
-
-      webdav.once('error', function (error) {
-        return done(error);
-      });
-
-      webdav.connect();
     });
 
   });
@@ -613,19 +533,16 @@ describe('protocols/webdav', function () {
   describe('rmdir()', function () {
 
     it('should delete the WebDAC collection', function (done) {
-      nock('http://www.example.com')
-        .intercept('/webdav', 'OPTIONS')
-        .basicAuth(options.credentials)
-        .reply(200);
-
       var scope = nock('http://www.example.com', {Depth: 'infinity'})
         .delete('/webdav/path/to/directory/')
         .basicAuth(options.credentials)
         .reply(201);
 
-      var webdav = new WebDAVClient(options);
+      createClient(function (error, webdav) {
+        if (error) {
+          return done(error);
+        }
 
-      webdav.once('ready', function () {
         webdav.rmdir('path/to/directory', function (error) {
           if (error) {
             return done(error);
@@ -636,28 +553,19 @@ describe('protocols/webdav', function () {
           return done();
         });
       });
-
-      webdav.once('error', function (error) {
-        return done(error);
-      });
-
-      webdav.connect();
     });
 
     it('should return an error on request error', function (done) {
-      nock('http://www.example.com')
-        .intercept('/webdav', 'OPTIONS')
-        .basicAuth(options.credentials)
-        .reply(200);
-
       var scope = nock('http://www.example.com', {Depth: 'infinity'})
         .delete('/webdav/path/to/directory/')
         .basicAuth(options.credentials)
         .reply(400);
 
-      var webdav = new WebDAVClient(options);
+      createClient(function (error, webdav) {
+        if (error) {
+          return done(error);
+        }
 
-      webdav.once('ready', function () {
         webdav.rmdir('path/to/directory/', function (error) {
           expect(scope.isDone()).to.equal(true);
 
@@ -669,12 +577,6 @@ describe('protocols/webdav', function () {
           return done();
         });
       });
-
-      webdav.once('error', function (error) {
-        return done(error);
-      });
-
-      webdav.connect();
     });
 
   });
@@ -682,19 +584,16 @@ describe('protocols/webdav', function () {
   describe('unlink()', function () {
 
     it('should delete the WebDAC collection', function (done) {
-      nock('http://www.example.com')
-        .intercept('/webdav', 'OPTIONS')
-        .basicAuth(options.credentials)
-        .reply(200);
-
       var scope = nock('http://www.example.com')
         .delete('/webdav/path/to/file.txt')
         .basicAuth(options.credentials)
         .reply(201);
 
-      var webdav = new WebDAVClient(options);
+      createClient(function (error, webdav) {
+        if (error) {
+          return done(error);
+        }
 
-      webdav.once('ready', function () {
         webdav.unlink('path/to/file.txt', function (error) {
           if (error) {
             return done(error);
@@ -705,28 +604,19 @@ describe('protocols/webdav', function () {
           return done();
         });
       });
-
-      webdav.once('error', function (error) {
-        return done(error);
-      });
-
-      webdav.connect();
     });
 
     it('should return an error on request error', function (done) {
-      nock('http://www.example.com')
-        .intercept('/webdav', 'OPTIONS')
-        .basicAuth(options.credentials)
-        .reply(200);
-
       var scope = nock('http://www.example.com')
         .delete('/webdav/path/to/file.txt')
         .basicAuth(options.credentials)
         .reply(400);
 
-      var webdav = new WebDAVClient(options);
+      createClient(function (error, webdav) {
+        if (error) {
+          return done(error);
+        }
 
-      webdav.once('ready', function () {
         webdav.unlink('path/to/file.txt', function (error) {
           expect(scope.isDone()).to.equal(true);
 
@@ -738,12 +628,6 @@ describe('protocols/webdav', function () {
           return done();
         });
       });
-
-      webdav.once('error', function (error) {
-        return done(error);
-      });
-
-      webdav.connect();
     });
 
   });
@@ -751,24 +635,15 @@ describe('protocols/webdav', function () {
   describe('disconnect()', function () {
 
     it('should return null', function (done) {
-      nock('http://www.example.com')
-        .intercept('/webdav', 'OPTIONS')
-        .basicAuth(options.credentials)
-        .reply(200);
+      createClient(function (error, webdav) {
+        if (error) {
+          return done(error);
+        }
 
-      var webdav = new WebDAVClient(options);
-
-      webdav.once('ready', function () {
         expect(webdav.disconnect()).to.equal(null);
 
         return done();
       });
-
-      webdav.once('error', function (error) {
-        return done(error);
-      });
-
-      webdav.connect();
     });
 
   });
