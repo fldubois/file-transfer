@@ -150,7 +150,7 @@ describe('protocols/webdav', function () {
       });
     });
 
-    it('should return an error on request error', function (done) {
+    it('should emit an error on request bad response', function (done) {
       var scope = nock('http://www.example.com')
         .get('/webdav/file.txt')
         .basicAuth(options.credentials)
@@ -212,7 +212,7 @@ describe('protocols/webdav', function () {
       });
     });
 
-    it('should return an error on request error', function (done) {
+    it('should emit an error on request bad response', function (done) {
       var scope = nock('http://www.example.com')
         .put('/webdav/file.txt')
         .basicAuth(options.credentials)
@@ -274,7 +274,7 @@ describe('protocols/webdav', function () {
       });
     });
 
-    it('should return an error on request error', function (done) {
+    it('should emit an error on request bad response', function (done) {
       var scope = nock('http://www.example.com')
         .get('/webdav/file.txt')
         .basicAuth(options.credentials)
@@ -327,7 +327,30 @@ describe('protocols/webdav', function () {
       });
     });
 
-    it('should return an error on request error', function (done) {
+    it('should ignore `mode` parameter', function (done) {
+      var scope = nock('http://www.example.com')
+        .intercept('/webdav/path/to/directory', 'MKCOL')
+        .basicAuth(options.credentials)
+        .reply(201);
+
+      createClient(function (error, webdav) {
+        if (error) {
+          return done(error);
+        }
+
+        webdav.mkdir('path/to/directory', '0775', function (error) {
+          if (error) {
+            return done(error);
+          }
+
+          expect(scope.isDone()).to.equal(true);
+
+          return done();
+        });
+      });
+    });
+
+    it('should emit an error on request bad response', function (done) {
       var scope = nock('http://www.example.com')
         .intercept('/webdav/path/to/directory', 'MKCOL')
         .basicAuth(options.credentials)
@@ -386,7 +409,7 @@ describe('protocols/webdav', function () {
       });
     });
 
-    it('should return an error on request error', function (done) {
+    it('should emit an error on request bad response', function (done) {
       var scope = nock('http://www.example.com')
         .put('/webdav/file.txt', 'Hello, friend.')
         .basicAuth(options.credentials)
@@ -472,7 +495,7 @@ describe('protocols/webdav', function () {
       });
     });
 
-    it('should return an error on request error', function (done) {
+    it('should emit an error on request bad response', function (done) {
       var headers = {
         'Content-Type': 'text/xml',
         'Depth':        1
@@ -501,7 +524,7 @@ describe('protocols/webdav', function () {
       });
     });
 
-    it('should return an error on bad XML response', function (done) {
+    it('should emit an error on bad XML response', function (done) {
       var headers = {
         'Content-Type': 'text/xml',
         'Depth':        1
@@ -532,7 +555,7 @@ describe('protocols/webdav', function () {
 
   describe('rmdir()', function () {
 
-    it('should delete the WebDAC collection', function (done) {
+    it('should delete the WebDAV collection', function (done) {
       var scope = nock('http://www.example.com', {Depth: 'infinity'})
         .delete('/webdav/path/to/directory/')
         .basicAuth(options.credentials)
@@ -555,7 +578,7 @@ describe('protocols/webdav', function () {
       });
     });
 
-    it('should return an error on request error', function (done) {
+    it('should emit an error on request bad response', function (done) {
       var scope = nock('http://www.example.com', {Depth: 'infinity'})
         .delete('/webdav/path/to/directory/')
         .basicAuth(options.credentials)
@@ -583,7 +606,7 @@ describe('protocols/webdav', function () {
 
   describe('unlink()', function () {
 
-    it('should delete the WebDAC collection', function (done) {
+    it('should delete the WebDAV file', function (done) {
       var scope = nock('http://www.example.com')
         .delete('/webdav/path/to/file.txt')
         .basicAuth(options.credentials)
@@ -606,7 +629,7 @@ describe('protocols/webdav', function () {
       });
     });
 
-    it('should return an error on request error', function (done) {
+    it('should emit an error on request bad response', function (done) {
       var scope = nock('http://www.example.com')
         .delete('/webdav/path/to/file.txt')
         .basicAuth(options.credentials)
@@ -643,6 +666,146 @@ describe('protocols/webdav', function () {
         expect(webdav.disconnect()).to.equal(null);
 
         return done();
+      });
+    });
+
+  });
+
+  describe('request()', function () {
+
+    it('should return the request instance', function (done) {
+      nock('http://www.example.com')
+        .get('/webdav/file.txt')
+        .basicAuth(options.credentials)
+        .reply(200, 'Hello');
+
+      createClient(function (error, webdav) {
+        if (error) {
+          return done(error);
+        }
+
+        var request = webdav.request('GET', 'file.txt');
+
+        expect(request).to.include.keys(['method', 'headers', 'uri', 'httpModule']);
+
+        return done();
+      });
+    });
+
+    it('should send the HTTP request', function (done) {
+      var scope = nock('http://www.example.com')
+        .get('/webdav/file.txt')
+        .basicAuth(options.credentials)
+        .reply(200, 'Hello');
+
+      createClient(function (error, webdav) {
+        if (error) {
+          return done(error);
+        }
+
+        webdav.request('GET', 'file.txt', function (error, body) {
+          if (error) {
+            return done(error);
+          }
+
+          expect(scope.isDone()).to.equal(true);
+          expect(body).to.equal('Hello');
+
+          return done();
+        });
+      });
+    });
+
+    it('should send the request body', function (done) {
+      var scope = nock('http://www.example.com')
+        .post('/webdav/file.txt', 'Hello')
+        .basicAuth(options.credentials)
+        .reply(200, 'World');
+
+      createClient(function (error, webdav) {
+        if (error) {
+          return done(error);
+        }
+
+        webdav.request('POST', 'file.txt', 'Hello', function (error, body) {
+          if (error) {
+            return done(error);
+          }
+
+          expect(scope.isDone()).to.equal(true);
+          expect(body).to.equal('World');
+
+          return done();
+        });
+      });
+    });
+
+    it('should accept request options', function (done) {
+      var headers = {
+        From: 'me'
+      };
+
+      var scope = nock('http://www.example.com', headers)
+        .get('/webdav/file.txt')
+        .basicAuth(options.credentials)
+        .reply(200, 'Hello');
+
+      createClient(function (error, webdav) {
+        if (error) {
+          return done(error);
+        }
+
+        webdav.request({
+          method:  'GET',
+          headers: headers
+        }, 'file.txt', function (error, body) {
+          if (error) {
+            return done(error);
+          }
+
+          expect(scope.isDone()).to.equal(true);
+          expect(body).to.equal('Hello');
+
+          return done();
+        });
+      });
+    });
+
+    it('should emit an error on request bad response', function (done) {
+      var scope = nock('http://www.example.com')
+        .get('/webdav/file.txt')
+        .basicAuth(options.credentials)
+        .reply(400);
+
+      createClient(function (error, webdav) {
+        if (error) {
+          return done(error);
+        }
+
+        webdav.request('GET', 'file.txt', function (error) {
+          expect(scope.isDone()).to.equal(true);
+
+          expect(error).to.be.an('error');
+          expect(error.message).to.equal('WebDAV request error');
+          expect(error.statusCode).to.equal(400);
+          expect(error.statusMessage).to.equal('Bad Request');
+
+          return done();
+        });
+      });
+    });
+
+    it('should emit an error on request failure', function (done) {
+      createClient(function (error, webdav) {
+        if (error) {
+          return done(error);
+        }
+
+        webdav.request('GET', 'file.txt', function (error) {
+          expect(error.message).to.match(/^Nock: No match for request/);
+
+          return done();
+        });
       });
     });
 
