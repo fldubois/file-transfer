@@ -19,7 +19,7 @@ var options = {
 
 function createClient(callback) {
   nock('http://www.example.com')
-    .intercept('/webdav', 'OPTIONS')
+    .intercept('/webdav/', 'OPTIONS')
     .basicAuth(options.credentials)
     .reply(200);
 
@@ -56,7 +56,7 @@ describe('protocols/webdav', function () {
 
     it('should check WebDAV connectivity with an OPTIONS request', function (done) {
       var scope = nock('http://www.example.com')
-        .intercept('/webdav', 'OPTIONS')
+        .intercept('/webdav/', 'OPTIONS')
         .basicAuth(options.credentials)
         .reply(200);
 
@@ -77,7 +77,7 @@ describe('protocols/webdav', function () {
 
     it('should emit an error on OPTIONS request error', function (done) {
       var scope = nock('http://www.example.com')
-        .intercept('/webdav', 'OPTIONS')
+        .intercept('/webdav/', 'OPTIONS')
         .basicAuth(options.credentials)
         .reply(401);
 
@@ -110,7 +110,7 @@ describe('protocols/webdav', function () {
       });
 
       webdav.once('error', function (error) {
-        expect(error.message).to.equal('Nock: Not allow net connect for "www.example.com:80/webdav"');
+        expect(error.message).to.equal('Nock: Not allow net connect for "www.example.com:80/webdav/"');
 
         return done();
       });
