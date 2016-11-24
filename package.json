@@ -28,7 +28,8 @@
   "dependencies": {
     "merge": "^1.2.0",
     "request": "^2.78.0",
-    "ssh2": "^0.5.2"
+    "ssh2": "^0.5.2",
+    "xml2js": "^0.4.17"
   },
   "devDependencies": {
     "app-module-path": "^2.1.0",

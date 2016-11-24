@@ -14,16 +14,7 @@ describe('Scenario: Delete a directory', function () {
   before('start the server', function (done) {
     sftpd({
       username: 'foo',
-      password: 'bar',
-      files:    {
-        path: {
-          to: {
-            dir: {
-              '.': {mode: parseInt(666, 8)}
-            }
-          }
-        }
-      }
+      password: 'bar'
     }, function (error, _server) {
       if (error) {
         return done(error);
@@ -32,6 +23,20 @@ describe('Scenario: Delete a directory', function () {
       server = _server;
 
       server.listen(20000, '127.0.0.1', done);
+    });
+  });
+
+  before('add files to server', function (done) {
+    server.fs.mkdir('path/to/dir', function (error) {
+      if (error) {
+        return done(error);
+      }
+
+      server.fs.set('path/to/dir/fileA.txt', new Buffer(0));
+      server.fs.set('path/to/dir/fileB.js',  new Buffer(0));
+      server.fs.set('path/to/dir/fileC.txt', new Buffer(0));
+
+      return done();
     });
   });
 

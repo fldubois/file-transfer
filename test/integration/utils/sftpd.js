@@ -41,7 +41,7 @@ module.exports = function (options, callback) {
     });
 
     server.clients = [];
-    server.fs      = new VirtualFS(options.files);
+    server.fs      = new VirtualFS();
 
     var directories = {};
 

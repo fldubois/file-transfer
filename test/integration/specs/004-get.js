@@ -20,14 +20,7 @@ describe('Scenario: Get a file', function () {
   before('start the server', function (done) {
     sftpd({
       username: 'foo',
-      password: 'bar',
-      files:    {
-        path: {
-          to: {
-            'file.txt': new Buffer('Hello, world !', 'utf8')
-          }
-        }
-      }
+      password: 'bar'
     }, function (error, _server) {
       if (error) {
         return done(error);
@@ -37,6 +30,10 @@ describe('Scenario: Get a file', function () {
 
       server.listen(20000, '127.0.0.1', done);
     });
+  });
+
+  before('add files to server', function () {
+    server.fs.set('path/to/file.txt', new Buffer('Hello, world !', 'utf8'));
   });
 
   it('should connect to the server', function (done) {

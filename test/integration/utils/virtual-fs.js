@@ -4,8 +4,8 @@ var get   = require('lodash.get');
 var set   = require('lodash.set');
 var unset = require('lodash.unset');
 
-function VirtualFS(files) {
-  this.files   = files || {};
+function VirtualFS() {
+  this.files   = {};
   this.handles = {};
   this.next    = 0;
 }
