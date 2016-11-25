@@ -21,7 +21,7 @@ module.exports = function (instances) {
     });
 
     it('should write the file on server', function () {
-      expect(instances.server.fs.get(remote)).to.be.an('object');
+      expect(Buffer.isBuffer(instances.server.fs.get(remote))).to.equal(true);
       expect(instances.server.fs.get(remote).toString()).to.equal('Hello, world !');
     });
 

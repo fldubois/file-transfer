@@ -3,7 +3,7 @@
 var expect = require('chai').expect;
 
 var sftpd     = require('test/integration/utils/sftpd');
-var scenarios = require('test/integration/scenarios')
+var scenarios = require('test/integration/scenarios');
 
 var transfer = require('lib/file-transfer');
 

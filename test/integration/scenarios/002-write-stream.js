@@ -25,7 +25,7 @@ module.exports = function (instances) {
             return done(error);
           }
 
-          expect(instances.server.fs.get(filepath)).to.be.an('object');
+          expect(Buffer.isBuffer(instances.server.fs.get(filepath))).to.equal(true);
           expect(instances.server.fs.get(filepath).toString()).to.equal('Hello, friend.');
 
           return done();
