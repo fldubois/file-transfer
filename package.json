@@ -26,7 +26,6 @@
     "test:integration": "mocha -r test/bootstrap.js --recursive test/integration/specs"
   },
   "dependencies": {
-    "merge": "^1.2.0",
     "request": "^2.78.0",
     "ssh2": "^0.5.2",
     "xml2js": "^0.4.17"

@@ -10,17 +10,21 @@ var nock   = require('nock');
 var WebDAVClient = require('lib/protocols/webdav');
 
 var options = {
-  baseURL:     'http://www.example.com/webdav',
-  credentials: {
-    user: 'john',
-    pass: '117'
-  }
+  host: 'www.example.com',
+  path: 'webdav',
+  user: 'john',
+  pass: '117'
+};
+
+var credentials = {
+  user: 'john',
+  pass: '117'
 };
 
 function createClient(callback) {
   nock('http://www.example.com')
     .intercept('/webdav/', 'OPTIONS')
-    .basicAuth(options.credentials)
+    .basicAuth(credentials)
     .reply(200);
 
   var webdav = new WebDAVClient(options);
@@ -55,12 +59,13 @@ describe('protocols/webdav', function () {
   describe('connect()', function () {
 
     it('should check WebDAV connectivity with an OPTIONS request', function (done) {
-      var scope = nock('http://www.example.com')
-        .intercept('/webdav/', 'OPTIONS')
-        .basicAuth(options.credentials)
+      var scope = nock('http://www.webdav-example.com')
+        .intercept('/', 'OPTIONS')
         .reply(200);
 
-      var webdav = new WebDAVClient(options);
+      var webdav = new WebDAVClient({
+        host: 'www.webdav-example.com'
+      });
 
       webdav.once('ready', function () {
         expect(scope.isDone()).to.equal(true);
@@ -78,7 +83,7 @@ describe('protocols/webdav', function () {
     it('should emit an error on OPTIONS request error', function (done) {
       var scope = nock('http://www.example.com')
         .intercept('/webdav/', 'OPTIONS')
-        .basicAuth(options.credentials)
+        .basicAuth(credentials)
         .reply(401);
 
       var webdav = new WebDAVClient(options);
@@ -125,7 +130,7 @@ describe('protocols/webdav', function () {
     it('should return a read stream', function (done) {
       var scope = nock('http://www.example.com')
         .get('/webdav/file.txt')
-        .basicAuth(options.credentials)
+        .basicAuth(credentials)
         .reply(200, 'Hello, friend.');
 
       createClient(function (error, webdav) {
@@ -153,7 +158,7 @@ describe('protocols/webdav', function () {
     it('should emit an error on request bad response', function (done) {
       var scope = nock('http://www.example.com')
         .get('/webdav/file.txt')
-        .basicAuth(options.credentials)
+        .basicAuth(credentials)
         .reply(404);
 
       createClient(function (error, webdav) {
@@ -191,7 +196,7 @@ describe('protocols/webdav', function () {
     it('should return a read stream', function (done) {
       var scope = nock('http://www.example.com')
         .put('/webdav/file.txt', 'Hello, friend.')
-        .basicAuth(options.credentials)
+        .basicAuth(credentials)
         .reply(200);
 
       createClient(function (error, webdav) {
@@ -215,7 +220,7 @@ describe('protocols/webdav', function () {
     it('should emit an error on request bad response', function (done) {
       var scope = nock('http://www.example.com')
         .put('/webdav/file.txt')
-        .basicAuth(options.credentials)
+        .basicAuth(credentials)
         .reply(401);
 
       createClient(function (error, webdav) {
@@ -245,7 +250,7 @@ describe('protocols/webdav', function () {
     it('should download the file', function (done) {
       var scope = nock('http://www.example.com')
         .get('/webdav/file.txt')
-        .basicAuth(options.credentials)
+        .basicAuth(credentials)
         .reply(200, 'Hello, friend.');
 
       createClient(function (error, webdav) {
@@ -277,7 +282,7 @@ describe('protocols/webdav', function () {
     it('should emit an error on request bad response', function (done) {
       var scope = nock('http://www.example.com')
         .get('/webdav/file.txt')
-        .basicAuth(options.credentials)
+        .basicAuth(credentials)
         .reply(404);
 
       createClient(function (error, webdav) {
@@ -307,7 +312,7 @@ describe('protocols/webdav', function () {
     it('should send a MKCOL request', function (done) {
       var scope = nock('http://www.example.com')
         .intercept('/webdav/path/to/directory', 'MKCOL')
-        .basicAuth(options.credentials)
+        .basicAuth(credentials)
         .reply(201);
 
       createClient(function (error, webdav) {
@@ -330,7 +335,7 @@ describe('protocols/webdav', function () {
     it('should ignore `mode` parameter', function (done) {
       var scope = nock('http://www.example.com')
         .intercept('/webdav/path/to/directory', 'MKCOL')
-        .basicAuth(options.credentials)
+        .basicAuth(credentials)
         .reply(201);
 
       createClient(function (error, webdav) {
@@ -353,7 +358,7 @@ describe('protocols/webdav', function () {
     it('should emit an error on request bad response', function (done) {
       var scope = nock('http://www.example.com')
         .intercept('/webdav/path/to/directory', 'MKCOL')
-        .basicAuth(options.credentials)
+        .basicAuth(credentials)
         .reply(400);
 
       createClient(function (error, webdav) {
@@ -381,7 +386,7 @@ describe('protocols/webdav', function () {
     it('should upload the file', function (done) {
       var scope = nock('http://www.example.com')
         .put('/webdav/file.txt', 'Hello, friend.')
-        .basicAuth(options.credentials)
+        .basicAuth(credentials)
         .reply(200);
 
       createClient(function (error, webdav) {
@@ -412,7 +417,7 @@ describe('protocols/webdav', function () {
     it('should emit an error on request bad response', function (done) {
       var scope = nock('http://www.example.com')
         .put('/webdav/file.txt', 'Hello, friend.')
-        .basicAuth(options.credentials)
+        .basicAuth(credentials)
         .reply(400);
 
       createClient(function (error, webdav) {
@@ -453,7 +458,7 @@ describe('protocols/webdav', function () {
 
       var scope = nock('http://www.example.com', headers)
         .intercept('/webdav/dir', 'PROPFIND')
-        .basicAuth(options.credentials)
+        .basicAuth(credentials)
         .reply(200, [
           '<?xml version="1.0" encoding="utf-8"?>',
           '<D:multistatus xmlns:D="DAV:">',
@@ -503,7 +508,7 @@ describe('protocols/webdav', function () {
 
       var scope = nock('http://www.example.com', headers)
         .intercept('/webdav/dir', 'PROPFIND')
-        .basicAuth(options.credentials)
+        .basicAuth(credentials)
         .reply(400);
 
       createClient(function (error, webdav) {
@@ -532,7 +537,7 @@ describe('protocols/webdav', function () {
 
       var scope = nock('http://www.example.com', headers)
         .intercept('/webdav/dir', 'PROPFIND')
-        .basicAuth(options.credentials)
+        .basicAuth(credentials)
         .reply(200, 'Not an XML');
 
       createClient(function (error, webdav) {
@@ -558,7 +563,7 @@ describe('protocols/webdav', function () {
     it('should delete the WebDAV collection', function (done) {
       var scope = nock('http://www.example.com', {Depth: 'infinity'})
         .delete('/webdav/path/to/directory/')
-        .basicAuth(options.credentials)
+        .basicAuth(credentials)
         .reply(201);
 
       createClient(function (error, webdav) {
@@ -581,7 +586,7 @@ describe('protocols/webdav', function () {
     it('should emit an error on request bad response', function (done) {
       var scope = nock('http://www.example.com', {Depth: 'infinity'})
         .delete('/webdav/path/to/directory/')
-        .basicAuth(options.credentials)
+        .basicAuth(credentials)
         .reply(400);
 
       createClient(function (error, webdav) {
@@ -609,7 +614,7 @@ describe('protocols/webdav', function () {
     it('should delete the WebDAV file', function (done) {
       var scope = nock('http://www.example.com')
         .delete('/webdav/path/to/file.txt')
-        .basicAuth(options.credentials)
+        .basicAuth(credentials)
         .reply(201);
 
       createClient(function (error, webdav) {
@@ -632,7 +637,7 @@ describe('protocols/webdav', function () {
     it('should emit an error on request bad response', function (done) {
       var scope = nock('http://www.example.com')
         .delete('/webdav/path/to/file.txt')
-        .basicAuth(options.credentials)
+        .basicAuth(credentials)
         .reply(400);
 
       createClient(function (error, webdav) {
@@ -676,7 +681,7 @@ describe('protocols/webdav', function () {
     it('should return the request instance', function (done) {
       nock('http://www.example.com')
         .get('/webdav/file.txt')
-        .basicAuth(options.credentials)
+        .basicAuth(credentials)
         .reply(200, 'Hello');
 
       createClient(function (error, webdav) {
@@ -695,7 +700,7 @@ describe('protocols/webdav', function () {
     it('should send the HTTP request', function (done) {
       var scope = nock('http://www.example.com')
         .get('/webdav/file.txt')
-        .basicAuth(options.credentials)
+        .basicAuth(credentials)
         .reply(200, 'Hello');
 
       createClient(function (error, webdav) {
@@ -719,7 +724,7 @@ describe('protocols/webdav', function () {
     it('should send the request body', function (done) {
       var scope = nock('http://www.example.com')
         .post('/webdav/file.txt', 'Hello')
-        .basicAuth(options.credentials)
+        .basicAuth(credentials)
         .reply(200, 'World');
 
       createClient(function (error, webdav) {
@@ -747,7 +752,7 @@ describe('protocols/webdav', function () {
 
       var scope = nock('http://www.example.com', headers)
         .get('/webdav/file.txt')
-        .basicAuth(options.credentials)
+        .basicAuth(credentials)
         .reply(200, 'Hello');
 
       createClient(function (error, webdav) {
@@ -774,7 +779,7 @@ describe('protocols/webdav', function () {
     it('should emit an error on request bad response', function (done) {
       var scope = nock('http://www.example.com')
         .get('/webdav/file.txt')
-        .basicAuth(options.credentials)
+        .basicAuth(credentials)
         .reply(400);
 
       createClient(function (error, webdav) {
