@@ -556,6 +556,33 @@ describe('protocols/webdav', function () {
       });
     });
 
+    it('should emit an error on empty response', function (done) {
+      var headers = {
+        'Content-Type': 'text/xml',
+        'Depth':        1
+      };
+
+      var scope = nock('http://www.example.com', headers)
+        .intercept('/webdav/dir', 'PROPFIND')
+        .basicAuth(credentials)
+        .reply(200, '');
+
+      createClient(function (error, webdav) {
+        if (error) {
+          return done(error);
+        }
+
+        webdav.readdir('dir', function (error, files) {
+          expect(scope.isDone()).to.equal(true);
+
+          expect(error).to.be.an('error');
+          expect(error.message).to.equal('Empty response on PROPFIND');
+
+          return done();
+        });
+      });
+    });
+
   });
 
   describe('rmdir()', function () {
