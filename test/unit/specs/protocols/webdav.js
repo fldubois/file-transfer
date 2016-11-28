@@ -572,7 +572,7 @@ describe('protocols/webdav', function () {
           return done(error);
         }
 
-        webdav.readdir('dir', function (error, files) {
+        webdav.readdir('dir', function (error) {
           expect(scope.isDone()).to.equal(true);
 
           expect(error).to.be.an('error');
