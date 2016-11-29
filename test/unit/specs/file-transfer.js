@@ -6,7 +6,8 @@ var proxyquire = require('proxyquire').noCallThru();
 var ClientMock = require('test/unit/mocks/client');
 
 var transfer = proxyquire('lib/file-transfer', {
-  './protocols/sftp': ClientMock
+  './protocols/sftp':   ClientMock,
+  './protocols/webdav': ClientMock
 });
 
 describe('file-transfer', function () {

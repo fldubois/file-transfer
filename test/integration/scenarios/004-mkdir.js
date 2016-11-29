@@ -24,7 +24,7 @@ module.exports = function (instances) {
     it('should create a directory with the right permissions', function (done) {
       var path = 'path/to/dir/B';
 
-      instances.client.mkdir(path, '700', function (error) {
+      instances.client.mkdir(path, {mode: '700'}, function (error) {
         if (error) {
           return done(error);
         }

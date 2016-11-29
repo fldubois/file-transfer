@@ -304,7 +304,7 @@ describe('protocols/sftp', function () {
       });
     });
 
-    it('should accept `mode` parameter', function (done) {
+    it('should accept `mode` option', function (done) {
       createClient(function (error, client) {
         if (error) {
           return done(error);
@@ -312,7 +312,7 @@ describe('protocols/sftp', function () {
 
         var path = '/path/to/directory';
 
-        client.mkdir(path, '0775', function (error) {
+        client.mkdir(path, {mode: '0775'}, function (error) {
           if (error) {
             return done(error);
           }
