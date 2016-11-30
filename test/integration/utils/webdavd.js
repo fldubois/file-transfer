@@ -1,5 +1,6 @@
 'use strict';
 
+var http = require('http');
 var path = require('path');
 
 var express    = require('express');
@@ -9,14 +10,15 @@ var xmlbuilder = require('xmlbuilder');
 var VirtualFS = require('./virtual-fs');
 
 module.exports = function (options, callback) {
-  var server = express();
+  var app    = express();
+  var server = http.createServer(app);
 
-  // server.use(bodyParser.raw());
-  server.use(bodyParser.raw({type: '*/*'}));
+  server.app = app;
+  server.fs  = new VirtualFS();
 
-  server.fs = new VirtualFS();
+  app.use(bodyParser.raw({type: '*/*'}));
 
-  server.use(function (req, res, next) {
+  app.use(function (req, res, next) {
     if (options.hasOwnProperty('user')) {
       var authorization = req.headers.authorization;
       var hash = new Buffer(options.user + ':' + options.pass).toString('base64');
@@ -29,13 +31,13 @@ module.exports = function (options, callback) {
     return next();
   });
 
-  server.options(/.*/, function (req, res) {
+  app.options(/.*/, function (req, res) {
     res.status(200);
     res.header('allow', 'OPTIONS, GET, PUT, DELETE, MKCOL, PROPFIND');
     res.send();
   });
 
-  server.get(/.*/, function (req, res) {
+  app.get(/.*/, function (req, res) {
     var filepath = req.path.replace(/^\/?/, '');
 
     var file = server.fs.get(filepath);
@@ -47,15 +49,19 @@ module.exports = function (options, callback) {
     return res.status(200).send(file);
   });
 
-  server.put(/.*/, function (req, res) {
+  app.put(/.*/, function (req, res) {
     var filepath = req.path.replace(/^\/?/, '');
+
+    if (server.fs.get(filepath) !== null) {
+      return res.status(423).send('Locked');
+    }
 
     server.fs.set(filepath, req.body);
 
     return res.status(201).send();
   });
 
-  server.delete(/.*/, function (req, res) {
+  app.delete(/.*/, function (req, res) {
     var filepath = req.path.replace(/^\/?/, '');
 
     var cb = function (error) {
@@ -73,7 +79,7 @@ module.exports = function (options, callback) {
     return server.fs.unlink(filepath, cb);
   });
 
-  server.mkcol(/.*/, function (req, res) {
+  app.mkcol(/.*/, function (req, res) {
     var filepath = req.path.replace(/^\/?/, '');
 
     server.fs.mkdir(filepath, function (error) {
@@ -85,7 +91,7 @@ module.exports = function (options, callback) {
     });
   });
 
-  server.propfind(/.*/, function (req, res) {
+  app.propfind(/.*/, function (req, res) {
     var filepath   = req.path.replace(/^\/?/, '');
     var collection = path.join('/', filepath, '/');
 
