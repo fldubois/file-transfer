@@ -40,7 +40,6 @@ module.exports = function (instances) {
 
       stream.on('error', function (error) {
         expect(error).to.be.an('error');
-        expect(error.message).to.equal('No such file or directory');
 
         return done();
       });

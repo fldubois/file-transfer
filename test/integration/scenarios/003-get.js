@@ -35,7 +35,6 @@ module.exports = function (instances) {
     it('should return errors', function (done) {
       instances.client.get('path/to/missing/file.txt', local, function (error) {
         expect(error).to.be.an('error');
-        expect(error.message).to.equal('No such file or directory');
 
         return done();
       });

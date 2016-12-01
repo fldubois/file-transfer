@@ -15,22 +15,14 @@ module.exports = function (instances) {
 
       var stream = instances.client.createWriteStream(filepath);
 
-      stream.write('Hello, ', 'utf8', function (error) {
-        if (error) {
-          return done(error);
-        }
+      stream.on('finish', function () {
+        expect(Buffer.isBuffer(instances.server.fs.get(filepath))).to.equal(true);
+        expect(instances.server.fs.get(filepath).toString()).to.equal('Hello, friend.');
 
-        stream.end('friend.', 'utf8', function (error) {
-          if (error) {
-            return done(error);
-          }
-
-          expect(Buffer.isBuffer(instances.server.fs.get(filepath))).to.equal(true);
-          expect(instances.server.fs.get(filepath).toString()).to.equal('Hello, friend.');
-
-          return done();
-        });
+        return done();
       });
+
+      stream.end('Hello, friend.', 'utf8');
     });
 
     it('should return errors', function (done) {
@@ -38,7 +30,6 @@ module.exports = function (instances) {
 
       stream.on('error', function (error) {
         expect(error).to.be.an('error');
-        expect(error.message).to.equal('EEXIST, open \'path/to/existing/file.txt\'');
 
         return done();
       });

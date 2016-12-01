@@ -21,28 +21,11 @@ module.exports = function (instances) {
       });
     });
 
-    it('should create a directory with the right permissions', function (done) {
-      var path = 'path/to/dir/B';
-
-      instances.client.mkdir(path, {mode: '700'}, function (error) {
-        if (error) {
-          return done(error);
-        }
-
-        expect(instances.server.fs.get(path)).to.be.an('object');
-        expect(instances.server.fs.get(path)['.']).to.be.an('object');
-        expect(instances.server.fs.get(path)['.'].mode).to.equal(parseInt('700', 8));
-
-        return done();
-      });
-    });
-
     it('should return errors', function (done) {
       var path = 'path/to/dir/A';
 
       instances.client.mkdir(path, function (error) {
         expect(error).to.be.an('error');
-        expect(error.message).to.equal('EEXIST, mkdir \'path/to/dir/A\'');
 
         return done();
       });
