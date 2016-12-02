@@ -32,7 +32,12 @@ SFTPStreamMock.prototype.fastGet = function (remote, local, callback) {
   return errors.hasOwnProperty('fastGet') ? callback(errors.fastGet) : callback(null);
 };
 
-SFTPStreamMock.prototype.fastPut = function (local, remote, callback) {
+SFTPStreamMock.prototype.fastPut = function (local, remote, options, callback) {
+  if (typeof options === 'function') {
+    callback = options;
+    options  = {};
+  }
+
   return errors.hasOwnProperty('fastPut') ? callback(errors.fastPut) : callback(null);
 };
 

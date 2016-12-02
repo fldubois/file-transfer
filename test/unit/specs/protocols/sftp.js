@@ -380,6 +380,28 @@ describe('protocols/sftp', function () {
       });
     });
 
+    it('should accept options', function (done) {
+      createClient(function (error, client) {
+        if (error) {
+          return done(error);
+        }
+
+        var local  = '/path/to/local/file';
+        var remote = '/path/to/remote/file';
+
+        client.put(local, remote, {mode: '0775'}, function (error) {
+          if (error) {
+            return done(error);
+          }
+
+          expect(client.sftp.fastPut).to.have.callCount(1);
+          expect(client.sftp.fastPut).to.have.been.calledWith(local, remote, {mode: '0775'});
+
+          return done();
+        });
+      });
+    });
+
     it('should transmit errors', function (done) {
       createClient(function (error, client) {
         if (error) {
