@@ -26,6 +26,7 @@
     "test:integration": "mocha -r test/bootstrap.js --recursive test/integration/specs"
   },
   "dependencies": {
+    "bluebird": "^3.4.6",
     "mime-types": "^2.1.13",
     "request": "^2.78.0",
     "ssh2": "^0.5.2",
@@ -35,6 +36,7 @@
     "app-module-path": "^2.1.0",
     "body-parser": "^1.15.2",
     "chai": "^3.5.0",
+    "chai-as-promised": "^6.0.0",
     "eslint": "^2.13.1",
     "express": "^4.14.0",
     "istanbul": "^0.4.5",

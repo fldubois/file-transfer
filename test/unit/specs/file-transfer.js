@@ -1,9 +1,12 @@
 'use strict';
 
-var expect     = require('chai').expect;
+var chai       = require('chai');
+var expect     = chai.expect;
 var proxyquire = require('proxyquire').noCallThru();
 
 var ClientMock = require('test/unit/mocks/client');
+
+chai.use(require('chai-as-promised'));
 
 var transfer = proxyquire('lib/file-transfer', {
   './protocols/sftp':   ClientMock,
@@ -91,6 +94,10 @@ describe('file-transfer', function () {
 
         done();
       });
+    });
+
+    it('should return a Promise', function () {
+      expect(transfer.connect('sftp', {test: true})).to.eventually.be.an.instanceOf(ClientMock);
     });
 
   });
