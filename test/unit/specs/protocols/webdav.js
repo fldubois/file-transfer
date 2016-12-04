@@ -414,6 +414,37 @@ describe('protocols/webdav', function () {
       });
     });
 
+    it('should ignore the `option` parameter', function (done) {
+      var scope = nock('http://www.example.com')
+        .put('/webdav/file.txt', 'Hello, friend.')
+        .basicAuth(credentials)
+        .reply(200);
+
+      createClient(function (error, webdav) {
+        if (error) {
+          return done(error);
+        }
+
+        var path = os.tmpdir() + '/' + Date.now() + '.txt';
+
+        fs.writeFile(path, 'Hello, friend.', 'utf8', function (error) {
+          if (error) {
+            return done(error);
+          }
+
+          webdav.put(path, 'file.txt', {test: true}, function (error) {
+            if (error) {
+              return done(error);
+            }
+
+            expect(scope.isDone()).to.equal(true);
+
+            fs.unlink(path, done);
+          });
+        });
+      });
+    });
+
     it('should emit an error on request bad response', function (done) {
       var scope = nock('http://www.example.com')
         .put('/webdav/file.txt', 'Hello, friend.')
@@ -716,7 +747,7 @@ describe('protocols/webdav', function () {
           return done(error);
         }
 
-        var request = webdav.request('GET', 'file.txt');
+        var request = webdav.request('GET', 'file');
 
         expect(request).to.include.keys(['method', 'headers', 'uri', 'httpModule']);
 
