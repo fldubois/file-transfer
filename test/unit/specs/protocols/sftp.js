@@ -11,19 +11,16 @@ var SFTPClient = proxyquire('lib/protocols/sftp', {
 });
 
 chai.use(require('sinon-chai'));
+chai.use(require('chai-as-promised'));
 
 function createClient(callback) {
   var sftp  = new SFTPClient({});
 
-  sftp.once('ready', function () {
+  sftp.connect().then(function () {
     return callback(null, sftp);
-  });
-
-  sftp.once('error', function (error) {
+  }).catch(function (error) {
     return callback(error);
   });
-
-  sftp.connect();
 }
 
 describe('protocols/sftp', function () {
@@ -40,7 +37,7 @@ describe('protocols/sftp', function () {
       ssh2.clear();
     });
 
-    it('should open a SFTP connection', function (done) {
+    it('should open a SFTP connection', function () {
       var options = {
         host: 'localhost',
         port: -1
@@ -48,7 +45,7 @@ describe('protocols/sftp', function () {
 
       var sftp = new SFTPClient(options);
 
-      sftp.once('ready', function () {
+      return sftp.connect().then(function () {
         expect(sftp.connected).to.equal(true);
 
         expect(sftp.client).to.be.an.instanceOf(ssh2.Client, 'should create a new ssh2 client');
@@ -57,59 +54,30 @@ describe('protocols/sftp', function () {
         expect(sftp.client.connect).to.have.been.calledWith(options);
 
         expect(sftp.client.sftp).to.have.callCount(1);
-
-        return done();
       });
-
-      sftp.once('error', function (error) {
-        return done(error);
-      });
-
-      sftp.connect();
     });
 
-    it('should emit an error on SSH connection error', function (done) {
+    it('should emit an error on SSH connection error', function () {
       var sftp  = new SFTPClient({});
       var error = new Error('Fake SSH connection error');
 
       ssh2.setError('connect', error);
 
-      sftp.once('ready', function () {
-        return done(new Error('connect() succeed with SSH connection error'));
-      });
-
-      sftp.once('error', function (err) {
+      return expect(sftp.connect()).to.be.rejectedWith(error).then(function () {
         expect(sftp.connected).to.equal(false);
-
-        expect(err).to.equal(error);
-
-        return done();
       });
-
-      sftp.connect();
     });
 
-    it('should emit an error on SFTP initialization error', function (done) {
+    it('should emit an error on SFTP initialization error', function () {
       var sftp  = new SFTPClient({});
       var error = new Error('Fake SFTP initialization error');
 
       ssh2.setError('sftp', error);
 
-      sftp.once('ready', function () {
-        return done(new Error('connect() succeed with SFTP initialization error'));
-      });
-
-      sftp.once('error', function (err) {
+      return expect(sftp.connect()).to.be.rejectedWith(error).then(function () {
         expect(sftp.connected).to.equal(false);
-
-        expect(err).to.equal(error);
-
         expect(sftp.client.end).to.have.callCount(1);
-
-        return done();
       });
-
-      sftp.connect();
     });
 
     after(function () {
