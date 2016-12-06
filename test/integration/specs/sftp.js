@@ -29,22 +29,16 @@ describe('SFTP', function () {
     });
   });
 
-  before('connect to the server', function (done) {
-    transfer.connect('sftp', {
+  before('connect to the server', function () {
+    return transfer.connect('sftp', {
       host:     '127.0.0.1',
       port:     20000,
       username: 'foo',
       password: 'bar'
-    }, function (err, _client) {
-      if (err) {
-        return done(err);
-      }
-
+    }).then(function (_client) {
       instances.client = _client;
 
       expect(instances.server.clients.length).to.equal(1);
-
-      return done();
     });
   });
 

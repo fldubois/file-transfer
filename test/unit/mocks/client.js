@@ -5,6 +5,8 @@ var util   = require('util');
 
 var sinon = require('sinon');
 
+var Promise = require('bluebird');
+
 function ClientMock(options) {
   this.options = options;
 
@@ -15,10 +17,10 @@ util.inherits(ClientMock, events.EventEmitter);
 
 ClientMock.prototype.connect = function () {
   if (this.options.hasOwnProperty('errors') && this.options.errors.hasOwnProperty('connect')) {
-    this.emit('error', new Error(this.options.errors.connect));
-  } else {
-    this.emit('ready');
+    return Promise.reject(new Error(this.options.errors.connect));
   }
+
+  return Promise.resolve();
 };
 
 module.exports = ClientMock;

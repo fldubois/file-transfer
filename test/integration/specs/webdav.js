@@ -27,20 +27,14 @@ describe('WebDAV', function () {
     });
   });
 
-  before('connect to the server', function (done) {
+  before('connect to the server', function () {
     transfer.connect('webdav', {
       host:     '127.0.0.1',
       port:     20001,
       username: 'foo',
       password: 'bar'
-    }, function (err, _client) {
-      if (err) {
-        return done(err);
-      }
-
+    }).then(function (_client) {
       instances.client = _client;
-
-      return done();
     });
   });
 
