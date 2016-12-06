@@ -29,15 +29,11 @@ function createClient(callback) {
 
   var webdav = new WebDAVClient(options);
 
-  webdav.once('ready', function () {
+  webdav.connect().then(function () {
     return callback(null, webdav);
-  });
-
-  webdav.once('error', function (error) {
+  }).catch(function (error) {
     return callback(error);
   });
-
-  webdav.connect();
 }
 
 describe('protocols/webdav', function () {
@@ -58,7 +54,7 @@ describe('protocols/webdav', function () {
 
   describe('connect()', function () {
 
-    it('should check WebDAV connectivity with an OPTIONS request', function (done) {
+    it('should check WebDAV connectivity with an OPTIONS request', function () {
       var scope = nock('http://www.webdav-example.com')
         .intercept('/', 'OPTIONS')
         .reply(200);
@@ -67,17 +63,9 @@ describe('protocols/webdav', function () {
         host: 'www.webdav-example.com'
       });
 
-      webdav.once('ready', function () {
+      return webdav.connect().then(function () {
         expect(scope.isDone()).to.equal(true);
-
-        return done();
       });
-
-      webdav.once('error', function (error) {
-        return done(error);
-      });
-
-      webdav.connect();
     });
 
     it('should emit an error on OPTIONS request error', function (done) {
@@ -88,11 +76,9 @@ describe('protocols/webdav', function () {
 
       var webdav = new WebDAVClient(options);
 
-      webdav.once('ready', function () {
+      webdav.connect().then(function () {
         return done(new Error('connect() succeed with OPTIONS request error'));
-      });
-
-      webdav.once('error', function (error) {
+      }).catch(function (error) {
         expect(scope.isDone()).to.equal(true);
 
         expect(error).to.be.an('error');
@@ -103,24 +89,18 @@ describe('protocols/webdav', function () {
 
         return done();
       });
-
-      webdav.connect();
     });
 
     it('should emit an error on request failure', function (done) {
       var webdav = new WebDAVClient(options);
 
-      webdav.once('ready', function () {
-        return done(new Error('connect() succeed with OPTIONS request error'));
-      });
-
-      webdav.once('error', function (error) {
+      webdav.connect().then(function () {
+        return done(new Error('connect() succeed with request failure'));
+      }).catch(function (error) {
         expect(error.message).to.equal('Nock: Not allow net connect for "www.example.com:80/webdav/"');
 
         return done();
       });
-
-      webdav.connect();
     });
 
   });
