@@ -21,19 +21,15 @@ var credentials = {
   pass: '117'
 };
 
-function createClient(callback) {
+function createWebDAVClient(callback) {
   nock('http://www.example.com')
     .intercept('/webdav/', 'OPTIONS')
     .basicAuth(credentials)
     .reply(200);
 
-  var webdav = new WebDAVClient(options);
+  var client = new WebDAVClient(options);
 
-  webdav.connect().then(function () {
-    return callback(null, webdav);
-  }).catch(function (error) {
-    return callback(error);
-  });
+  return client.connect().thenReturn(client);
 }
 
 describe('protocols/webdav', function () {
@@ -59,11 +55,11 @@ describe('protocols/webdav', function () {
         .intercept('/', 'OPTIONS')
         .reply(200);
 
-      var webdav = new WebDAVClient({
+      var client = new WebDAVClient({
         host: 'www.webdav-example.com'
       });
 
-      return webdav.connect().then(function () {
+      return client.connect().then(function () {
         expect(scope.isDone()).to.equal(true);
       });
     });
@@ -74,9 +70,9 @@ describe('protocols/webdav', function () {
         .basicAuth(credentials)
         .reply(401);
 
-      var webdav = new WebDAVClient(options);
+      var client = new WebDAVClient(options);
 
-      webdav.connect().then(function () {
+      client.connect().then(function () {
         return done(new Error('connect() succeed with OPTIONS request error'));
       }).catch(function (error) {
         expect(scope.isDone()).to.equal(true);
@@ -92,9 +88,9 @@ describe('protocols/webdav', function () {
     });
 
     it('should emit an error on request failure', function (done) {
-      var webdav = new WebDAVClient(options);
+      var client = new WebDAVClient(options);
 
-      webdav.connect().then(function () {
+      client.connect().then(function () {
         return done(new Error('connect() succeed with request failure'));
       }).catch(function (error) {
         expect(error.message).to.equal('Nock: Not allow net connect for "www.example.com:80/webdav/"');
@@ -113,12 +109,8 @@ describe('protocols/webdav', function () {
         .basicAuth(credentials)
         .reply(200, 'Hello, friend.');
 
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
-        var stream  = webdav.createReadStream('file.txt');
+      createWebDAVClient().then(function (client) {
+        var stream  = client.createReadStream('file.txt');
         var content = '';
 
         stream.on('data', function (data) {
@@ -132,7 +124,7 @@ describe('protocols/webdav', function () {
           expect(content).to.equal('Hello, friend.');
           return done();
         });
-      });
+      }).catch(done);
     });
 
     it('should emit an error on request bad response', function (done) {
@@ -141,12 +133,8 @@ describe('protocols/webdav', function () {
         .basicAuth(credentials)
         .reply(404);
 
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
-        var stream = webdav.createReadStream('file.txt');
+      createWebDAVClient().then(function (client) {
+        var stream = client.createReadStream('file.txt');
 
         stream.on('data', function () {
           return done(new Error('Read stream created with request error'));
@@ -166,7 +154,7 @@ describe('protocols/webdav', function () {
         stream.on('end', function () {
           return done(new Error('Read stream created with request error'));
         });
-      });
+      }).catch(done);
     });
 
   });
@@ -179,12 +167,8 @@ describe('protocols/webdav', function () {
         .basicAuth(credentials)
         .reply(200);
 
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
-        var stream  = webdav.createWriteStream('file.txt');
+      createWebDAVClient().then(function (client) {
+        var stream  = client.createWriteStream('file.txt');
 
         stream.on('error', done);
 
@@ -194,7 +178,7 @@ describe('protocols/webdav', function () {
         });
 
         stream.end('Hello, friend.', 'utf8');
-      });
+      }).catch(done);
     });
 
     it('should emit an error on request bad response', function (done) {
@@ -203,12 +187,8 @@ describe('protocols/webdav', function () {
         .basicAuth(credentials)
         .reply(401);
 
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
-        var stream = webdav.createWriteStream('file.txt');
+      createWebDAVClient().then(function (client) {
+        var stream = client.createWriteStream('file.txt');
 
         stream.on('error', function (error) {
           expect(scope.isDone()).to.equal(true);
@@ -220,7 +200,7 @@ describe('protocols/webdav', function () {
 
           return done();
         });
-      });
+      }).catch(done);
     });
 
   });
@@ -233,14 +213,10 @@ describe('protocols/webdav', function () {
         .basicAuth(credentials)
         .reply(200, 'Hello, friend.');
 
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
+      createWebDAVClient().then(function (client) {
         var path = os.tmpdir() + '/' + Date.now() + '.txt';
 
-        webdav.get('file.txt', path, function (error) {
+        client.get('file.txt', path, function (error) {
           if (error) {
             return done(error);
           }
@@ -256,7 +232,7 @@ describe('protocols/webdav', function () {
             fs.unlink(path, done);
           });
         });
-      });
+      }).catch(done);
     });
 
     it('should emit an error on request bad response', function (done) {
@@ -265,14 +241,10 @@ describe('protocols/webdav', function () {
         .basicAuth(credentials)
         .reply(404);
 
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
+      createWebDAVClient().then(function (client) {
         var path = os.tmpdir() + '/' + Date.now() + '.txt';
 
-        webdav.get('file.txt', path, function (error) {
+        client.get('file.txt', path, function (error) {
           expect(scope.isDone()).to.equal(true);
 
           expect(error).to.be.an('error');
@@ -282,7 +254,7 @@ describe('protocols/webdav', function () {
 
           return done();
         });
-      });
+      }).catch(done);
     });
 
   });
@@ -295,12 +267,8 @@ describe('protocols/webdav', function () {
         .basicAuth(credentials)
         .reply(201);
 
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
-        webdav.mkdir('path/to/directory', function (error) {
+      createWebDAVClient().then(function (client) {
+        client.mkdir('path/to/directory', function (error) {
           if (error) {
             return done(error);
           }
@@ -309,7 +277,7 @@ describe('protocols/webdav', function () {
 
           return done();
         });
-      });
+      }).catch(done);
     });
 
     it('should ignore `mode` parameter', function (done) {
@@ -318,12 +286,8 @@ describe('protocols/webdav', function () {
         .basicAuth(credentials)
         .reply(201);
 
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
-        webdav.mkdir('path/to/directory', '0775', function (error) {
+      createWebDAVClient().then(function (client) {
+        client.mkdir('path/to/directory', '0775', function (error) {
           if (error) {
             return done(error);
           }
@@ -332,7 +296,7 @@ describe('protocols/webdav', function () {
 
           return done();
         });
-      });
+      }).catch(done);
     });
 
     it('should emit an error on request bad response', function (done) {
@@ -341,12 +305,8 @@ describe('protocols/webdav', function () {
         .basicAuth(credentials)
         .reply(400);
 
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
-        webdav.mkdir('path/to/directory', function (error) {
+      createWebDAVClient().then(function (client) {
+        client.mkdir('path/to/directory', function (error) {
           expect(scope.isDone()).to.equal(true);
 
           expect(error).to.be.an('error');
@@ -356,7 +316,7 @@ describe('protocols/webdav', function () {
 
           return done();
         });
-      });
+      }).catch(done);
     });
 
   });
@@ -369,11 +329,7 @@ describe('protocols/webdav', function () {
         .basicAuth(credentials)
         .reply(200);
 
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
+      createWebDAVClient().then(function (client) {
         var path = os.tmpdir() + '/' + Date.now() + '.txt';
 
         fs.writeFile(path, 'Hello, friend.', 'utf8', function (error) {
@@ -381,7 +337,7 @@ describe('protocols/webdav', function () {
             return done(error);
           }
 
-          webdav.put(path, 'file.txt', function (error) {
+          client.put(path, 'file.txt', function (error) {
             if (error) {
               return done(error);
             }
@@ -391,7 +347,7 @@ describe('protocols/webdav', function () {
             fs.unlink(path, done);
           });
         });
-      });
+      }).catch(done);
     });
 
     it('should ignore the `option` parameter', function (done) {
@@ -400,11 +356,7 @@ describe('protocols/webdav', function () {
         .basicAuth(credentials)
         .reply(200);
 
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
+      createWebDAVClient().then(function (client) {
         var path = os.tmpdir() + '/' + Date.now() + '.txt';
 
         fs.writeFile(path, 'Hello, friend.', 'utf8', function (error) {
@@ -412,7 +364,7 @@ describe('protocols/webdav', function () {
             return done(error);
           }
 
-          webdav.put(path, 'file.txt', {test: true}, function (error) {
+          client.put(path, 'file.txt', {test: true}, function (error) {
             if (error) {
               return done(error);
             }
@@ -422,7 +374,7 @@ describe('protocols/webdav', function () {
             fs.unlink(path, done);
           });
         });
-      });
+      }).catch(done);
     });
 
     it('should emit an error on request bad response', function (done) {
@@ -431,11 +383,7 @@ describe('protocols/webdav', function () {
         .basicAuth(credentials)
         .reply(400);
 
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
+      createWebDAVClient().then(function (client) {
         var path = os.tmpdir() + '/' + Date.now() + '.txt';
 
         fs.writeFile(path, 'Hello, friend.', 'utf8', function (error) {
@@ -443,7 +391,7 @@ describe('protocols/webdav', function () {
             return done(error);
           }
 
-          webdav.put(path, 'file.txt', function (error) {
+          client.put(path, 'file.txt', function (error) {
             expect(scope.isDone()).to.equal(true);
 
             expect(error).to.be.an('error');
@@ -454,7 +402,7 @@ describe('protocols/webdav', function () {
             fs.unlink(path, done);
           });
         });
-      });
+      }).catch(done);
     });
 
   });
@@ -491,12 +439,8 @@ describe('protocols/webdav', function () {
           '</D:multistatus>'
         ].join('\n'));
 
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
-        webdav.readdir('dir', function (error, files) {
+      createWebDAVClient().then(function (client) {
+        client.readdir('dir', function (error, files) {
           if (error) {
             return done(error);
           }
@@ -508,7 +452,7 @@ describe('protocols/webdav', function () {
 
           return done();
         });
-      });
+      }).catch(done);
     });
 
     it('should emit an error on request bad response', function (done) {
@@ -522,12 +466,8 @@ describe('protocols/webdav', function () {
         .basicAuth(credentials)
         .reply(400);
 
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
-        webdav.readdir('dir', function (error) {
+      createWebDAVClient().then(function (client) {
+        client.readdir('dir', function (error) {
           expect(scope.isDone()).to.equal(true);
 
           expect(error).to.be.an('error');
@@ -537,7 +477,7 @@ describe('protocols/webdav', function () {
 
           return done();
         });
-      });
+      }).catch(done);
     });
 
     it('should emit an error on bad XML response', function (done) {
@@ -551,12 +491,8 @@ describe('protocols/webdav', function () {
         .basicAuth(credentials)
         .reply(200, 'Not an XML');
 
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
-        webdav.readdir('dir', function (error) {
+      createWebDAVClient().then(function (client) {
+        client.readdir('dir', function (error) {
           expect(scope.isDone()).to.equal(true);
 
           expect(error).to.be.an('error');
@@ -564,7 +500,7 @@ describe('protocols/webdav', function () {
 
           return done();
         });
-      });
+      }).catch(done);
     });
 
     it('should emit an error on empty response', function (done) {
@@ -578,12 +514,8 @@ describe('protocols/webdav', function () {
         .basicAuth(credentials)
         .reply(200, '');
 
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
-        webdav.readdir('dir', function (error) {
+      createWebDAVClient().then(function (client) {
+        client.readdir('dir', function (error) {
           expect(scope.isDone()).to.equal(true);
 
           expect(error).to.be.an('error');
@@ -591,7 +523,7 @@ describe('protocols/webdav', function () {
 
           return done();
         });
-      });
+      }).catch(done);
     });
 
   });
@@ -604,12 +536,8 @@ describe('protocols/webdav', function () {
         .basicAuth(credentials)
         .reply(201);
 
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
-        webdav.rmdir('path/to/directory', function (error) {
+      createWebDAVClient().then(function (client) {
+        client.rmdir('path/to/directory', function (error) {
           if (error) {
             return done(error);
           }
@@ -618,7 +546,7 @@ describe('protocols/webdav', function () {
 
           return done();
         });
-      });
+      }).catch(done);
     });
 
     it('should emit an error on request bad response', function (done) {
@@ -627,12 +555,8 @@ describe('protocols/webdav', function () {
         .basicAuth(credentials)
         .reply(400);
 
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
-        webdav.rmdir('path/to/directory/', function (error) {
+      createWebDAVClient().then(function (client) {
+        client.rmdir('path/to/directory/', function (error) {
           expect(scope.isDone()).to.equal(true);
 
           expect(error).to.be.an('error');
@@ -642,7 +566,7 @@ describe('protocols/webdav', function () {
 
           return done();
         });
-      });
+      }).catch(done);
     });
 
   });
@@ -655,12 +579,8 @@ describe('protocols/webdav', function () {
         .basicAuth(credentials)
         .reply(201);
 
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
-        webdav.unlink('path/to/file.txt', function (error) {
+      createWebDAVClient().then(function (client) {
+        client.unlink('path/to/file.txt', function (error) {
           if (error) {
             return done(error);
           }
@@ -669,7 +589,7 @@ describe('protocols/webdav', function () {
 
           return done();
         });
-      });
+      }).catch(done);
     });
 
     it('should emit an error on request bad response', function (done) {
@@ -678,12 +598,8 @@ describe('protocols/webdav', function () {
         .basicAuth(credentials)
         .reply(400);
 
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
-        webdav.unlink('path/to/file.txt', function (error) {
+      createWebDAVClient().then(function (client) {
+        client.unlink('path/to/file.txt', function (error) {
           expect(scope.isDone()).to.equal(true);
 
           expect(error).to.be.an('error');
@@ -693,7 +609,7 @@ describe('protocols/webdav', function () {
 
           return done();
         });
-      });
+      }).catch(done);
     });
 
   });
@@ -701,15 +617,11 @@ describe('protocols/webdav', function () {
   describe('disconnect()', function () {
 
     it('should return null', function (done) {
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
-        expect(webdav.disconnect()).to.equal(null);
+      createWebDAVClient().then(function (client) {
+        expect(client.disconnect()).to.equal(null);
 
         return done();
-      });
+      }).catch(done);
     });
 
   });
@@ -722,17 +634,13 @@ describe('protocols/webdav', function () {
         .basicAuth(credentials)
         .reply(200, 'Hello');
 
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
-        var request = webdav.request('GET', 'file');
+      createWebDAVClient().then(function (client) {
+        var request = client.request('GET', 'file');
 
         expect(request).to.include.keys(['method', 'headers', 'uri', 'httpModule']);
 
         return done();
-      });
+      }).catch(done);
     });
 
     it('should send the HTTP request', function (done) {
@@ -741,12 +649,8 @@ describe('protocols/webdav', function () {
         .basicAuth(credentials)
         .reply(200, 'Hello');
 
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
-        webdav.request('GET', 'file.txt', function (error, body) {
+      createWebDAVClient().then(function (client) {
+        client.request('GET', 'file.txt', function (error, body) {
           if (error) {
             return done(error);
           }
@@ -756,7 +660,7 @@ describe('protocols/webdav', function () {
 
           return done();
         });
-      });
+      }).catch(done);
     });
 
     it('should send the request body', function (done) {
@@ -765,12 +669,8 @@ describe('protocols/webdav', function () {
         .basicAuth(credentials)
         .reply(200, 'World');
 
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
-        webdav.request('POST', 'file.txt', 'Hello', function (error, body) {
+      createWebDAVClient().then(function (client) {
+        client.request('POST', 'file.txt', 'Hello', function (error, body) {
           if (error) {
             return done(error);
           }
@@ -780,7 +680,7 @@ describe('protocols/webdav', function () {
 
           return done();
         });
-      });
+      }).catch(done);
     });
 
     it('should accept request options', function (done) {
@@ -793,12 +693,8 @@ describe('protocols/webdav', function () {
         .basicAuth(credentials)
         .reply(200, 'Hello');
 
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
-        webdav.request({
+      createWebDAVClient().then(function (client) {
+        client.request({
           method:  'GET',
           headers: headers
         }, 'file.txt', function (error, body) {
@@ -811,7 +707,7 @@ describe('protocols/webdav', function () {
 
           return done();
         });
-      });
+      }).catch(done);
     });
 
     it('should emit an error on request bad response', function (done) {
@@ -820,12 +716,8 @@ describe('protocols/webdav', function () {
         .basicAuth(credentials)
         .reply(400);
 
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
-        webdav.request('GET', 'file.txt', function (error) {
+      createWebDAVClient().then(function (client) {
+        client.request('GET', 'file.txt', function (error) {
           expect(scope.isDone()).to.equal(true);
 
           expect(error).to.be.an('error');
@@ -835,21 +727,17 @@ describe('protocols/webdav', function () {
 
           return done();
         });
-      });
+      }).catch(done);
     });
 
     it('should emit an error on request failure', function (done) {
-      createClient(function (error, webdav) {
-        if (error) {
-          return done(error);
-        }
-
-        webdav.request('GET', 'file.txt', function (error) {
+      createWebDAVClient().then(function (client) {
+        client.request('GET', 'file.txt', function (error) {
           expect(error.message).to.match(/^Nock: No match for request/);
 
           return done();
         });
-      });
+      }).catch(done);
     });
 
   });
