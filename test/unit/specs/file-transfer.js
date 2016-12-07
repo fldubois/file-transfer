@@ -4,6 +4,8 @@ var chai       = require('chai');
 var expect     = chai.expect;
 var proxyquire = require('proxyquire').noCallThru();
 
+var Promise = require('bluebird');
+
 var ClientMock = require('test/unit/mocks/client');
 
 chai.use(require('chai-as-promised'));
@@ -98,6 +100,26 @@ describe('file-transfer', function () {
 
     it('should return a Promise', function () {
       expect(transfer.connect('sftp', {test: true})).to.eventually.be.an.instanceOf(ClientMock);
+    });
+
+  });
+
+  describe('disposer()', function () {
+
+    it('should automatically close the client', function () {
+      var client  = null;
+      var options = {test: true};
+
+      return Promise.using(transfer.disposer('sftp', options), function (_client) {
+        expect(_client).to.be.an.instanceOf(ClientMock, 'should instantiate a new client');
+
+        expect(_client.connect.calledOnce).to.equal(true, 'should call connect() on client');
+        expect(_client.options).to.equal(options, 'shoul set options on client');
+
+        client = _client;
+      }).then(function () {
+        expect(client.disconnect.calledOnce).to.equal(true, 'should call disconnect() on client');
+      });
     });
 
   });

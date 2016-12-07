@@ -11,6 +11,7 @@ function ClientMock(options) {
   this.options = options;
 
   sinon.spy(this, 'connect');
+  sinon.spy(this, 'disconnect');
 }
 
 util.inherits(ClientMock, events.EventEmitter);
@@ -21,6 +22,10 @@ ClientMock.prototype.connect = function () {
   }
 
   return Promise.resolve();
+};
+
+ClientMock.prototype.disconnect = function() {
+  return null;
 };
 
 module.exports = ClientMock;
