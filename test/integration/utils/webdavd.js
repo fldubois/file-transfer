@@ -33,7 +33,7 @@ module.exports = function (options, callback) {
 
   app.options(/.*/, function (req, res) {
     res.status(200);
-    res.header('allow', 'OPTIONS, GET, PUT, DELETE, MKCOL, PROPFIND');
+    res.header('allow', 'OPTIONS,GET,PUT,DELETE,MKCOL,PROPFIND');
     res.send();
   });
 

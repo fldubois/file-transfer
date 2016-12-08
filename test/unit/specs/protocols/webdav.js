@@ -21,11 +21,15 @@ var credentials = {
   pass: '117'
 };
 
+var methods = ['OPTIONS', 'GET', 'PUT', 'DELETE', 'MKCOL', 'PROPFIND'];
+
 function createWebDAVClient() {
   nock('http://www.example.com')
     .intercept('/webdav/', 'OPTIONS')
     .basicAuth(credentials)
-    .reply(200);
+    .reply(200, '', {
+      allow: methods.join(',')
+    });
 
   var client = new WebDAVClient(options);
 
@@ -53,7 +57,9 @@ describe('protocols/webdav', function () {
     it('should check WebDAV connectivity with an OPTIONS request', function () {
       var scope = nock('http://www.webdav-example.com')
         .intercept('/', 'OPTIONS')
-        .reply(200);
+        .reply(200, '', {
+          allow: methods.join(',')
+        });
 
       var client = new WebDAVClient({
         host: 'www.webdav-example.com'
@@ -62,6 +68,31 @@ describe('protocols/webdav', function () {
       return client.connect().then(function () {
         expect(scope.isDone()).to.equal(true);
         expect(client.connected).to.equal(true);
+      });
+    });
+
+    it('should check supported HTTP methods', function (done) {
+      var scope = nock('http://www.example.com')
+        .intercept('/webdav/', 'OPTIONS')
+        .basicAuth(credentials)
+        .reply(200, '', {
+          allow: ['OPTIONS', 'PUT', 'DELETE', 'PROPFIND'].join(',')
+        });
+
+      var client = new WebDAVClient(options);
+
+      client.connect().then(function () {
+        return done(new Error('connect() succeed with unsupported methods'));
+      }).catch(function (error) {
+        expect(scope.isDone()).to.equal(true);
+
+        expect(client.connected).to.equal(false);
+
+        expect(error).to.be.an('error');
+
+        expect(error.message).to.equal('Unsupported HTTP methods: GET, MKCOL');
+
+        return done();
       });
     });
 
@@ -112,7 +143,9 @@ describe('protocols/webdav', function () {
       nock('http://www.example.com')
         .intercept('/webdav/', 'OPTIONS')
         .basicAuth(credentials)
-        .reply(200);
+        .reply(200, '', {
+          allow: methods.join(',')
+        });
 
       var client = new WebDAVClient(options);
 
@@ -679,12 +712,13 @@ describe('protocols/webdav', function () {
         .reply(200, 'Hello');
 
       createWebDAVClient().then(function (client) {
-        client.request('GET', 'file.txt', function (error, body) {
+        client.request('GET', 'file.txt', function (error, response, body) {
           if (error) {
             return done(error);
           }
 
           expect(scope.isDone()).to.equal(true);
+          expect(response).to.include.keys(['connection', 'statusCode', 'url', 'httpVersion']);
           expect(body).to.equal('Hello');
 
           return done();
@@ -699,12 +733,13 @@ describe('protocols/webdav', function () {
         .reply(200, 'World');
 
       createWebDAVClient().then(function (client) {
-        client.request('POST', 'file.txt', 'Hello', function (error, body) {
+        client.request('POST', 'file.txt', 'Hello', function (error, response, body) {
           if (error) {
             return done(error);
           }
 
           expect(scope.isDone()).to.equal(true);
+          expect(response).to.include.keys(['connection', 'statusCode', 'url', 'httpVersion']);
           expect(body).to.equal('World');
 
           return done();
@@ -726,12 +761,13 @@ describe('protocols/webdav', function () {
         client.request({
           method:  'GET',
           headers: headers
-        }, 'file.txt', function (error, body) {
+        }, 'file.txt', function (error, response, body) {
           if (error) {
             return done(error);
           }
 
           expect(scope.isDone()).to.equal(true);
+          expect(response).to.include.keys(['connection', 'statusCode', 'url', 'httpVersion']);
           expect(body).to.equal('Hello');
 
           return done();
