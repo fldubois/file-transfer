@@ -82,6 +82,24 @@ describe('protocols/sftp', function () {
 
   });
 
+  describe('isConnected()', function () {
+
+    it('should return true when the client is connected', function () {
+      var client = new SFTPClient({});
+
+      expect(client.isConnected()).to.equal(false);
+
+      return client.connect().then(function () {
+        expect(client.isConnected()).to.equal(true);
+
+        client.disconnect();
+
+        expect(client.isConnected()).to.equal(false);
+      });
+    });
+
+  });
+
   describe('get()', function () {
 
     it('should download the file via the SFTP connection', function (done) {
@@ -513,6 +531,18 @@ describe('protocols/sftp', function () {
 
         return done();
       }).catch(done);
+    });
+
+    it('should do nothing on unconnected client', function () {
+      var client = new SFTPClient({});
+
+      expect(client.connected).to.equal(false);
+      expect(client.client.end).to.have.callCount(0);
+
+      client.disconnect();
+
+      expect(client.connected).to.equal(false);
+      expect(client.client.end).to.have.callCount(0);
     });
 
   });

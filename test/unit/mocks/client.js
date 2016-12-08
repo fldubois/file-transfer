@@ -24,7 +24,7 @@ ClientMock.prototype.connect = function () {
   return Promise.resolve();
 };
 
-ClientMock.prototype.disconnect = function() {
+ClientMock.prototype.disconnect = function () {
   return null;
 };
 

@@ -21,7 +21,7 @@ var credentials = {
   pass: '117'
 };
 
-function createWebDAVClient(callback) {
+function createWebDAVClient() {
   nock('http://www.example.com')
     .intercept('/webdav/', 'OPTIONS')
     .basicAuth(credentials)
@@ -61,6 +61,7 @@ describe('protocols/webdav', function () {
 
       return client.connect().then(function () {
         expect(scope.isDone()).to.equal(true);
+        expect(client.connected).to.equal(true);
       });
     });
 
@@ -76,6 +77,8 @@ describe('protocols/webdav', function () {
         return done(new Error('connect() succeed with OPTIONS request error'));
       }).catch(function (error) {
         expect(scope.isDone()).to.equal(true);
+
+        expect(client.connected).to.equal(false);
 
         expect(error).to.be.an('error');
 
@@ -95,7 +98,32 @@ describe('protocols/webdav', function () {
       }).catch(function (error) {
         expect(error.message).to.equal('Nock: Not allow net connect for "www.example.com:80/webdav/"');
 
+        expect(client.connected).to.equal(false);
+
         return done();
+      });
+    });
+
+  });
+
+  describe('isConnected()', function () {
+
+    it('should return true when the client is connected', function () {
+      nock('http://www.example.com')
+        .intercept('/webdav/', 'OPTIONS')
+        .basicAuth(credentials)
+        .reply(200);
+
+      var client = new WebDAVClient(options);
+
+      expect(client.isConnected()).to.equal(false);
+
+      return client.connect().then(function () {
+        expect(client.isConnected()).to.equal(true);
+
+        client.disconnect();
+
+        expect(client.isConnected()).to.equal(false);
       });
     });
 
@@ -616,9 +644,10 @@ describe('protocols/webdav', function () {
 
   describe('disconnect()', function () {
 
-    it('should return null', function (done) {
+    it('should set connected to false and return null', function (done) {
       createWebDAVClient().then(function (client) {
         expect(client.disconnect()).to.equal(null);
+        expect(client.connected).to.equal(false);
 
         return done();
       }).catch(done);
