@@ -775,7 +775,50 @@ describe('protocols/webdav', function () {
       }).catch(done);
     });
 
-    it('should emit an error on request bad response', function (done) {
+    it('should send request on unconnected client with `force` option', function (done) {
+      var scope = nock('http://www.example.com')
+        .get('/webdav/file.txt')
+        .basicAuth(credentials)
+        .reply(200, 'Hello');
+
+      var client = new WebDAVClient(options);
+
+      client.request({
+        method: 'GET',
+        force:  true
+      }, 'file.txt', function (error, response, body) {
+        if (error) {
+          return done(error);
+        }
+
+        expect(scope.isDone()).to.equal(true);
+        expect(response).to.include.keys(['connection', 'statusCode', 'url', 'httpVersion']);
+        expect(body).to.equal('Hello');
+
+        return done();
+      });
+    });
+
+    it('should throw an error on unconnected client', function () {
+      var client = new WebDAVClient(options);
+
+      expect(function () {
+        client.request('GET', 'file.txt');
+      }).to.throw('WebDAV client not connected');
+    });
+
+    it('should return an error in callback on unconnected client', function (done) {
+      var client = new WebDAVClient(options);
+
+      client.request('GET', 'file.txt', function (error) {
+        expect(error).to.be.an('error');
+        expect(error.message).to.equal('WebDAV client not connected');
+
+        return done();
+      });
+    });
+
+    it('should return an error on request bad response', function (done) {
       var scope = nock('http://www.example.com')
         .get('/webdav/file.txt')
         .basicAuth(credentials)
@@ -795,7 +838,7 @@ describe('protocols/webdav', function () {
       }).catch(done);
     });
 
-    it('should emit an error on request failure', function (done) {
+    it('should return an error on request failure', function (done) {
       createWebDAVClient().then(function (client) {
         client.request('GET', 'file.txt', function (error) {
           expect(error.message).to.match(/^Nock: No match for request/);
