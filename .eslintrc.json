@@ -87,7 +87,7 @@
     // enforce consistent newlines before and after dots
     "dot-location": "off",
     // enforce dot notation whenever possible
-    "dot-notation": ["error", {"allowKeywords": false, "allowPattern": "^[A-Za-z]+((_|-)[A-Za-z]+)+$"}],
+    "dot-notation": ["error", {"allowKeywords": true, "allowPattern": "^[A-Za-z]+((_|-)[A-Za-z]+)+$"}],
     // require the use of === and !==
     "eqeqeq": ["error", "allow-null"],
     // require for-in loops to include an if statement
