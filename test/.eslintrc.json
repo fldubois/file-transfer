@@ -9,6 +9,9 @@
     // enforce dot notation whenever possible
     "dot-notation": ["error", {"allowKeywords": true, "allowPattern": "^[A-Za-z]+((_|-)[A-Za-z]+)+$"}],
 
+    // disallow this keywords outside of classes or class-like objects
+    "no-invalid-this": "off",
+
     // disallow magic numbers
     "no-magic-numbers": "off",
 

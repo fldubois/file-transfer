@@ -147,6 +147,14 @@ describe('protocols/sftp', function () {
 
   });
 
+  describe('supportsStreams()', function () {
+
+    it('should return true', function () {
+      expect(new SFTPClient({}).supportsStreams()).to.equal(true);
+    });
+
+  });
+
   describe('createReadStream()', function () {
 
     it('should create a readable stream from the SFTP connection', function (done) {

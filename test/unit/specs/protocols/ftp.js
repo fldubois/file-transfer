@@ -143,6 +143,14 @@ describe('protocols/ftp', function () {
 
   });
 
+  describe('supportsStreams()', function () {
+
+    it('should return false', function () {
+      expect(new FTPClient({}).supportsStreams()).to.equal(false);
+    });
+
+  });
+
   describe('createReadStream()', function () {
 
     it('should throw `Not implemented` error', function (done) {

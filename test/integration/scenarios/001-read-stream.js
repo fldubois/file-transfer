@@ -13,6 +13,10 @@ module.exports = function (instances) {
     });
 
     it('should create a read stream', function (done) {
+      if (!instances.client.supportsStreams()) {
+        this.skip();
+      }
+
       stream = instances.client.createReadStream('path/to/file.txt');
 
       var content = '';
@@ -32,6 +36,10 @@ module.exports = function (instances) {
     });
 
     it('should return errors', function (done) {
+      if (!instances.client.supportsStreams()) {
+        this.skip();
+      }
+
       stream = instances.client.createReadStream('path/to/missing/file.txt');
 
       stream.on('data', function () {

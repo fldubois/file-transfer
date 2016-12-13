@@ -11,6 +11,10 @@ module.exports = function (instances) {
     });
 
     it('should create a write stream', function (done) {
+      if (!instances.client.supportsStreams()) {
+        this.skip();
+      }
+
       var filepath = 'path/to/file.txt';
 
       var stream = instances.client.createWriteStream(filepath);
@@ -26,6 +30,10 @@ module.exports = function (instances) {
     });
 
     it('should return errors', function (done) {
+      if (!instances.client.supportsStreams()) {
+        this.skip();
+      }
+
       var stream = instances.client.createWriteStream('path/to/existing/file.txt', {flags: 'wx'});
 
       stream.on('error', function (error) {

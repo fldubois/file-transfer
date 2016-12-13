@@ -162,6 +162,14 @@ describe('protocols/webdav', function () {
 
   });
 
+  describe('supportsStreams()', function () {
+
+    it('should return true', function () {
+      expect(new WebDAVClient(options).supportsStreams()).to.equal(true);
+    });
+
+  });
+
   describe('createReadStream()', function () {
 
     it('should return a read stream', function (done) {
