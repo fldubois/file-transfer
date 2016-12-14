@@ -258,6 +258,74 @@ VirtualFS.prototype.close = function (fd, callback) {
   return callback(null);
 };
 
+VirtualFS.prototype.writeFile = function(filename, data, options, callback) {
+  if (typeof options === 'function') {
+    callback = options;
+    options  = {};
+  }
+
+  if (!Buffer.isBuffer(data)) {
+    data = new Buffer(data.toString(), options.encoding || 'utf8');
+  }
+
+  // TODO: Support options.flag and options.mode
+
+  set(this.files, filename.split('/'), data);
+
+  return callback(null);
+};
+
+VirtualFS.prototype.readFile = function(filename, options, callback) {
+  if (typeof options === 'function') {
+    callback = options;
+    options  = {};
+  }
+
+  var file = get(this.files, filename.split('/'), null);
+
+  if (file === null) {
+    error = new Error('ENOENT, open \'' + filename + '\'');
+
+    error.errno = 34;
+    error.code  = 'ENOENT';
+    error.path  = filename;
+
+    return callback(error);
+  }
+
+  return callback(null, options.hasOwnProperty('encoding') ? file.toString(options.encoding) : file);
+};
+
+VirtualFS.prototype.rename = function(oldPath, newPath, callback) {
+  var file = get(this.files, oldPath.split('/'), null);
+
+  if (file === null) {
+    error = new Error('ENOENT, open \'' + oldPath + '\'');
+
+    error.errno = 34;
+    error.code  = 'ENOENT';
+    error.path  = oldPath;
+
+    return callback(error);
+  }
+
+  if (get(this.files, newPath.split('/'), null) !== null) {
+    error = new Error('EEXIST, open \'' + newPath + '\'');
+
+    error.errno = 47;
+    error.code  = 'EEXIST';
+    error.path  = newPath;
+
+    return callback(error);
+  }
+
+  set(this.files, newPath.split('/'), file);
+
+  unset(this.files, oldPath.split('/'));
+
+  return callback(null);
+};
+
 VirtualFS.prototype.get = function (path) {
   return get(this.files, path.split('/'), null);
 };
