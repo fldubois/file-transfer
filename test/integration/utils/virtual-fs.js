@@ -81,6 +81,14 @@ VirtualFS.prototype.stat = function (path, callback) {
     mtime: now
   };
 
+  stats.isDirectory = function () {
+    return !Buffer.isBuffer(file);
+  };
+
+  stats.isFile = function () {
+    return Buffer.isBuffer(file);
+  };
+
   return callback(null, stats);
 };
 
