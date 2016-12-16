@@ -1,5 +1,8 @@
 'use strict';
 
+var path   = require('path');
+var stream = require('stream');
+
 var get   = require('lodash.get');
 var set   = require('lodash.set');
 var unset = require('lodash.unset');
@@ -23,7 +26,7 @@ VirtualFS.prototype.open = function (path, flags, mode, callback) {
     return callback(new Error('Unknown file open flag: ' + flags));
   }
 
-  var file = get(this.files, path.split('/'), null);
+  var file = this.get(path);
 
   if (flags.indexOf('r') !== -1 && file === null) {
     error = new Error('ENOENT, open \'' + path + '\'');
@@ -46,7 +49,7 @@ VirtualFS.prototype.open = function (path, flags, mode, callback) {
   }
 
   if (flags.indexOf('w') !== -1 || (flags.indexOf('a') !== -1 && file === null)) {
-    set(this.files, path.split('/'), new Buffer(0));
+    this.set(path, new Buffer(0));
   }
 
   var fd = this.next++;
@@ -57,7 +60,7 @@ VirtualFS.prototype.open = function (path, flags, mode, callback) {
 };
 
 VirtualFS.prototype.stat = function (path, callback) {
-  var file = get(this.files, path.split('/'), null);
+  var file = this.get(path);
 
   if (file === null) {
     var error = new Error('ENOENT, stat \'' + path + '\'');
@@ -103,7 +106,7 @@ VirtualFS.prototype.read = function (fd, buffer, offset, length, position, callb
   }
 
   var path = this.handles[fd];
-  var file = get(this.files, path.split('/'), null);
+  var file = this.get(path);
 
   if (offset > file.length) {
     return callback(null, 0, null);
@@ -127,21 +130,21 @@ VirtualFS.prototype.write = function (fd, buffer, offset, length, position, call
   }
 
   var path = this.handles[fd];
-  var file = get(this.files, path.split('/'), null);
+  var file = this.get(path);
 
   var newFile = new Buffer(Math.max(file.length, offset + buffer.length));
 
   file.copy(newFile);
   buffer.copy(newFile, offset);
 
-  set(this.files, path.split('/'), newFile);
+  this.set(path, newFile);
 
   return callback(null, buffer.length, buffer);
 };
 
 VirtualFS.prototype.mkdir = function (path, mode, callback) {
   var error = null;
-  var file  = get(this.files, path.split('/'), null);
+  var file  = this.get(path);
 
   if (typeof mode === 'function') {
     callback = mode;
@@ -161,14 +164,14 @@ VirtualFS.prototype.mkdir = function (path, mode, callback) {
     return callback(error);
   }
 
-  set(this.files, path.split('/'), {'.': {mode: mode}});
+  this.set(path, {'.': {mode: mode}});
 
   return callback(null);
 };
 
 VirtualFS.prototype.readdir = function (path, callback) {
   var error = null;
-  var file  = get(this.files, path.split('/'), null);
+  var file  = this.get(path);
 
   if (file === null) {
     error = new Error('ENOENT, readdir \'' + path + '\'');
@@ -195,7 +198,7 @@ VirtualFS.prototype.readdir = function (path, callback) {
 
 VirtualFS.prototype.rmdir = function (path, callback) {
   var error = null;
-  var file  = get(this.files, path.split('/'), null);
+  var file  = this.get(path);
 
   if (file === null) {
     error = new Error('ENOENT, rmdir \'' + path + '\'');
@@ -217,14 +220,14 @@ VirtualFS.prototype.rmdir = function (path, callback) {
     return callback(error);
   }
 
-  unset(this.files, path.split('/'));
+  this.unset(path);
 
   return callback(null);
 };
 
 VirtualFS.prototype.unlink = function (path, callback) {
   var error = null;
-  var file  = get(this.files, path.split('/'), null);
+  var file  = this.get(path);
 
   if (file === null) {
     error = new Error('ENOENT, unlink \'' + path + '\'');
@@ -246,7 +249,7 @@ VirtualFS.prototype.unlink = function (path, callback) {
     return callback(error);
   }
 
-  unset(this.files, path.split('/'));
+  this.unset(path);
 
   return callback(null);
 };
@@ -266,7 +269,7 @@ VirtualFS.prototype.close = function (fd, callback) {
   return callback(null);
 };
 
-VirtualFS.prototype.writeFile = function(filename, data, options, callback) {
+VirtualFS.prototype.writeFile = function (filename, data, options, callback) {
   if (typeof options === 'function') {
     callback = options;
     options  = {};
@@ -278,21 +281,21 @@ VirtualFS.prototype.writeFile = function(filename, data, options, callback) {
 
   // TODO: Support options.flag and options.mode
 
-  set(this.files, filename.split('/'), data);
+  this.set(filename, data);
 
   return callback(null);
 };
 
-VirtualFS.prototype.readFile = function(filename, options, callback) {
+VirtualFS.prototype.readFile = function (filename, options, callback) {
   if (typeof options === 'function') {
     callback = options;
     options  = {};
   }
 
-  var file = get(this.files, filename.split('/'), null);
+  var file = this.get(filename);
 
   if (file === null) {
-    error = new Error('ENOENT, open \'' + filename + '\'');
+    var error = new Error('ENOENT, open \'' + filename + '\'');
 
     error.errno = 34;
     error.code  = 'ENOENT';
@@ -304,8 +307,79 @@ VirtualFS.prototype.readFile = function(filename, options, callback) {
   return callback(null, options.hasOwnProperty('encoding') ? file.toString(options.encoding) : file);
 };
 
-VirtualFS.prototype.rename = function(oldPath, newPath, callback) {
-  var file = get(this.files, oldPath.split('/'), null);
+VirtualFS.prototype.createReadStream = function(filename, options) {
+  var file      = this.get(filename);
+  var readable  = new stream.Readable();
+
+  readable._read = function(size) {
+    setImmediate(function () {
+      if (file === null) {
+        var error = new Error('ENOENT, open \'' + filename + '\'');
+
+        error.errno = 34;
+        error.code  = 'ENOENT';
+        error.path  = filename;
+
+        readable.emit('error', error);
+      } else if (file.length > 0) {
+        var buffer = file.slice(0, size);
+
+        file = file.slice(size);
+
+        this.push(buffer);
+      } else {
+        this.push(null);
+      }
+    }.bind(this));
+  };
+
+  return readable;
+};
+
+VirtualFS.prototype.createWriteStream = function(filename, options) {
+  var directory = this.get(path.dirname(filename));
+  var vfs       = this;
+  var writable  = new stream.Writable();
+
+  writable._write = function(chunk, encoding, callback) {
+    setImmediate(function () {
+      var error = null;
+
+      if (directory === null) {
+        error = new Error('ENOENT, readdir \'' + filename + '\'');
+
+        error.errno = 34;
+        error.code  = 'ENOENT';
+        error.path  = filename;
+
+        return callback(error);
+      }
+
+      if (Buffer.isBuffer(directory)) {
+        error = new Error('ENOTDIR,, readdir \'' + filename + '\'');
+
+        error.errno = 27;
+        error.code  = 'ENOTDIR,';
+        error.path  = filename;
+
+        return callback(error);
+      }
+
+      var file = vfs.get(filename);
+      var data = Buffer.isBuffer(chunk) ? chunk : new Buffer(chunk, encoding);
+
+      vfs.set(filename, (file === null) ? data : Buffer.concat([file, data]));
+
+      return callback();
+    });
+  };
+
+  return writable;
+};
+
+VirtualFS.prototype.rename = function (oldPath, newPath, callback) {
+  var error = null;
+  var file  = this.get(oldPath);
 
   if (file === null) {
     error = new Error('ENOENT, open \'' + oldPath + '\'');
@@ -317,7 +391,7 @@ VirtualFS.prototype.rename = function(oldPath, newPath, callback) {
     return callback(error);
   }
 
-  if (get(this.files, newPath.split('/'), null) !== null) {
+  if (this.get(newPath) !== null) {
     error = new Error('EEXIST, open \'' + newPath + '\'');
 
     error.errno = 47;
@@ -327,19 +401,23 @@ VirtualFS.prototype.rename = function(oldPath, newPath, callback) {
     return callback(error);
   }
 
-  set(this.files, newPath.split('/'), file);
+  this.set(newPath, file);
 
-  unset(this.files, oldPath.split('/'));
+  unset(this.files, oldPath.replace(/^\//, '').split('/'));
 
   return callback(null);
 };
 
 VirtualFS.prototype.get = function (path) {
-  return get(this.files, path.split('/'), null);
+  return get(this.files, path.replace(/^\//, '').split('/'), null);
 };
 
 VirtualFS.prototype.set = function (path, file) {
-  return set(this.files, path.split('/'), file);
+  return set(this.files, path.replace(/^\//, '').split('/'), file);
+};
+
+VirtualFS.prototype.unset = function (path) {
+  return unset(this.files, path.replace(/^\//, '').split('/'));
 };
 
 module.exports = VirtualFS;
