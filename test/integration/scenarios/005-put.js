@@ -7,7 +7,7 @@ var expect = require('chai').expect;
 
 module.exports = function (instances) {
 
-  describe('Scenario: Get a file', function () {
+  describe('Scenario: Put a file', function () {
 
     var remote = 'path/to/file.txt';
     var local  = os.tmpdir() + '/file-' + Date.now() + '.txt';
