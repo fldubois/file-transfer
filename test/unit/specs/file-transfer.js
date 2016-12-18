@@ -11,6 +11,7 @@ var ClientMock = require('test/unit/mocks/client');
 chai.use(require('chai-as-promised'));
 
 var transfer = proxyquire('lib/file-transfer', {
+  './protocols/ftp':    ClientMock,
   './protocols/sftp':   ClientMock,
   './protocols/webdav': ClientMock
 });

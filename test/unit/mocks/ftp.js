@@ -1,6 +1,7 @@
 'use strict';
 
 var events = require('events');
+var path   = require('path');
 var util   = require('util');
 
 var sinon = require('sinon');
@@ -32,7 +33,7 @@ ClientMock.prototype.connect = function () {
   }
 };
 
-ClientMock.prototype.get = function (path, callback) {
+ClientMock.prototype.get = function (filepath, callback) {
   if (errors.hasOwnProperty('get')) {
     return callback(errors.get);
   }
@@ -48,16 +49,17 @@ ClientMock.prototype.put = function (local, remote, callback) {
   return callback(errors.hasOwnProperty('put') ? errors.put : null);
 };
 
-ClientMock.prototype.mkdir = function (path, callback) {
+ClientMock.prototype.mkdir = function (directory, callback) {
   return callback(errors.hasOwnProperty('mkdir') ? errors.mkdir : null);
 };
 
-ClientMock.prototype.list = function (path, callback) {
+ClientMock.prototype.list = function (directory, callback) {
   if (errors.hasOwnProperty('list')) {
     return callback(errors.list);
   }
 
   return callback(null, [
+    {name: path.basename(path.dirname(directory))},
     {name: 'file1'},
     {name: 'file2'},
     {name: 'file3'},
@@ -67,11 +69,11 @@ ClientMock.prototype.list = function (path, callback) {
   ]);
 };
 
-ClientMock.prototype.rmdir = function (path, callback) {
+ClientMock.prototype.rmdir = function (directory, callback) {
   return callback(errors.hasOwnProperty('rmdir') ? errors.rmdir : null);
 };
 
-ClientMock.prototype.delete = function (path, callback) {
+ClientMock.prototype.delete = function (filepath, callback) {
   return callback(errors.hasOwnProperty('delete') ? errors.delete : null);
 };
 
