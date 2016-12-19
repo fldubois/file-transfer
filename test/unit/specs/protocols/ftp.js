@@ -6,6 +6,8 @@ var chai       = require('chai');
 var expect     = chai.expect;
 var proxyquire = require('proxyquire').noCallThru();
 
+var Promise = require('bluebird');
+
 var ftp = require('test/unit/mocks/ftp');
 
 var VirtualFS = require('test/integration/utils/virtual-fs');
@@ -55,6 +57,25 @@ describe('protocols/ftp', function () {
 
         expect(client.client.connect).to.have.callCount(1);
         expect(client.client.connect).to.have.been.calledWith(options);
+      });
+    });
+
+    it('should accept credentials variants', function () {
+      return Promise.each([
+        {user:     'elliot', pass:     'fsociety'},
+        {user:     'elliot', password: 'fsociety'},
+        {username: 'elliot', pass:     'fsociety'},
+        {username: 'elliot', password: 'fsociety'},
+        {username: 'elliot', password: 'fsociety', user: 'elliot', pass: 'fsociety'}
+      ], function (options) {
+        options.host = 'localhost';
+        options.port = -1;
+
+        var client = new FTPClient(options);
+
+        return client.connect().then(function () {
+          expect(client.client.connect).to.have.been.calledWith(options);
+        });
       });
     });
 

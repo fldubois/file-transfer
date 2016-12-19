@@ -10,10 +10,10 @@ var nock   = require('nock');
 var WebDAVClient = require('lib/protocols/webdav');
 
 var options = {
-  host: 'www.example.com',
-  path: 'webdav',
-  user: 'john',
-  pass: '117'
+  host:     'www.example.com',
+  path:     'webdav',
+  username: 'john',
+  password: '117'
 };
 
 var credentials = {
@@ -63,6 +63,27 @@ describe('protocols/webdav', function () {
 
       var client = new WebDAVClient({
         host: 'www.webdav-example.com'
+      });
+
+      return client.connect().then(function () {
+        expect(scope.isDone()).to.equal(true);
+        expect(client.connected).to.equal(true);
+      });
+    });
+
+    it('should accept credentials variants', function () {
+      var scope = nock('http://www.example.com')
+        .intercept('/webdav/', 'OPTIONS')
+        .basicAuth(credentials)
+        .reply(200, '', {
+          allow: methods.join(',')
+        });
+
+      var client = new WebDAVClient({
+        host: 'www.example.com',
+        path: 'webdav',
+        user: 'john',
+        pass: '117'
       });
 
       return client.connect().then(function () {

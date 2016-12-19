@@ -31,7 +31,7 @@ describe('FTP', function () {
     return transfer.connect('ftp', {
       host:     '127.0.0.1',
       port:     20000,
-      user:     'foo',
+      username: 'foo',
       password: 'bar'
     }).then(function (_client) {
       instances.client = _client;

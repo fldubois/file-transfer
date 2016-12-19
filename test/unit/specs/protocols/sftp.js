@@ -4,6 +4,8 @@ var chai       = require('chai');
 var expect     = chai.expect;
 var proxyquire = require('proxyquire').noCallThru();
 
+var Promise = require('bluebird');
+
 var ssh2 = require('test/unit/mocks/ssh2');
 
 var SFTPClient = proxyquire('lib/protocols/sftp', {
@@ -50,6 +52,25 @@ describe('protocols/sftp', function () {
         expect(client.client.connect).to.have.been.calledWith(options);
 
         expect(client.client.sftp).to.have.callCount(1);
+      });
+    });
+
+    it('should accept credentials variants', function () {
+      return Promise.each([
+        {user:     'elliot', pass:     'fsociety'},
+        {user:     'elliot', password: 'fsociety'},
+        {username: 'elliot', pass:     'fsociety'},
+        {username: 'elliot', password: 'fsociety'},
+        {username: 'elliot', password: 'fsociety', user: 'elliot', pass: 'fsociety'}
+      ], function (options) {
+        options.host = 'localhost';
+        options.port = -1;
+
+        var client = new SFTPClient(options);
+
+        return client.connect().then(function () {
+          expect(client.client.connect).to.have.been.calledWith(options);
+        });
       });
     });
 
