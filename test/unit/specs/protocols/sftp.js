@@ -46,7 +46,7 @@ describe('protocols/sftp', function () {
       return client.connect().then(function () {
         expect(client.connected).to.equal(true);
 
-        expect(client.client).to.be.an.instanceOf(ssh2.Client, 'should create a new ssh2 client');
+        expect(client.client).to.be.an.instanceOf(ssh2.Client);
 
         expect(client.client.connect).to.have.callCount(1);
         expect(client.client.connect).to.have.been.calledWith(options);
@@ -141,7 +141,7 @@ describe('protocols/sftp', function () {
       }).catch(done);
     });
 
-    it('should transmit errors', function (done) {
+    it('should transmit SFTP errors', function (done) {
       createSFTPClient().then(function (client) {
         var fakeError = new Error('Fake fastGet() error');
 
@@ -304,7 +304,7 @@ describe('protocols/sftp', function () {
       }).catch(done);
     });
 
-    it('should transmit errors', function (done) {
+    it('should transmit SFTP errors', function (done) {
       createSFTPClient().then(function (client) {
         var fakeError = new Error('Fake mkdir() error');
 
@@ -333,7 +333,7 @@ describe('protocols/sftp', function () {
 
   describe('put()', function () {
 
-    it('should download the file via the SFTP connection', function (done) {
+    it('should upload the file via the SFTP connection', function (done) {
       createSFTPClient().then(function (client) {
         var local  = '/path/to/local/file';
         var remote = '/path/to/remote/file';
@@ -369,7 +369,7 @@ describe('protocols/sftp', function () {
       }).catch(done);
     });
 
-    it('should transmit errors', function (done) {
+    it('should transmit SFTP errors', function (done) {
       createSFTPClient().then(function (client) {
         var fakeError = new Error('Fake fastPut() error');
 
@@ -422,7 +422,7 @@ describe('protocols/sftp', function () {
       }).catch(done);
     });
 
-    it('should transmit errors', function (done) {
+    it('should transmit SFTP errors', function (done) {
       createSFTPClient().then(function (client) {
         var fakeError = new Error('Fake readdir() error');
 
@@ -454,7 +454,7 @@ describe('protocols/sftp', function () {
 
   describe('rmdir()', function () {
 
-    it('should create a directory via the SFTP connection', function (done) {
+    it('should delete the directory via the SFTP connection', function (done) {
       createSFTPClient().then(function (client) {
         var path = '/path/to/directory';
 
@@ -471,7 +471,7 @@ describe('protocols/sftp', function () {
       }).catch(done);
     });
 
-    it('should transmit errors', function (done) {
+    it('should transmit SFTP errors', function (done) {
       createSFTPClient().then(function (client) {
         var fakeError = new Error('Fake rmdir() error');
 
@@ -517,7 +517,7 @@ describe('protocols/sftp', function () {
       }).catch(done);
     });
 
-    it('should transmit errors', function (done) {
+    it('should transmit SFTP errors', function (done) {
       createSFTPClient().then(function (client) {
         var fakeError = new Error('Fake unlink() error');
 

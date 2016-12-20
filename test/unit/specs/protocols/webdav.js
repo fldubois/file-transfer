@@ -117,7 +117,7 @@ describe('protocols/webdav', function () {
       });
     });
 
-    it('should emit an error on OPTIONS request error', function (done) {
+    it('should return an error on OPTIONS request error', function (done) {
       var scope = nock('http://www.example.com')
         .intercept('/webdav/', 'OPTIONS')
         .basicAuth(credentials)
@@ -142,7 +142,7 @@ describe('protocols/webdav', function () {
       });
     });
 
-    it('should emit an error on request failure', function (done) {
+    it('should return an error on request failure', function (done) {
       var client = new WebDAVClient(options);
 
       client.connect().then(function () {
@@ -217,7 +217,7 @@ describe('protocols/webdav', function () {
       }).catch(done);
     });
 
-    it('should emit an error on request bad response', function (done) {
+    it('should return an error on request bad response', function (done) {
       var scope = nock('http://www.example.com')
         .get('/webdav/file.txt')
         .basicAuth(credentials)
@@ -271,7 +271,7 @@ describe('protocols/webdav', function () {
       }).catch(done);
     });
 
-    it('should emit an error on request bad response', function (done) {
+    it('should return an error on request bad response', function (done) {
       var scope = nock('http://www.example.com')
         .put('/webdav/file.txt')
         .basicAuth(credentials)
@@ -325,7 +325,7 @@ describe('protocols/webdav', function () {
       }).catch(done);
     });
 
-    it('should emit an error on request bad response', function (done) {
+    it('should return an error on request bad response', function (done) {
       var scope = nock('http://www.example.com')
         .get('/webdav/file.txt')
         .basicAuth(credentials)
@@ -389,7 +389,7 @@ describe('protocols/webdav', function () {
       }).catch(done);
     });
 
-    it('should emit an error on request bad response', function (done) {
+    it('should return an error on request bad response', function (done) {
       var scope = nock('http://www.example.com')
         .intercept('/webdav/path/to/directory', 'MKCOL')
         .basicAuth(credentials)
@@ -467,7 +467,7 @@ describe('protocols/webdav', function () {
       }).catch(done);
     });
 
-    it('should emit an error on request bad response', function (done) {
+    it('should return an error on request bad response', function (done) {
       var scope = nock('http://www.example.com')
         .put('/webdav/file.txt', 'Hello, friend.')
         .basicAuth(credentials)
@@ -545,7 +545,7 @@ describe('protocols/webdav', function () {
       }).catch(done);
     });
 
-    it('should emit an error on request bad response', function (done) {
+    it('should return an error on request bad response', function (done) {
       var headers = {
         'Content-Type': 'text/xml',
         'Depth':        1
@@ -570,7 +570,7 @@ describe('protocols/webdav', function () {
       }).catch(done);
     });
 
-    it('should emit an error on bad XML response', function (done) {
+    it('should return an error on bad XML response', function (done) {
       var headers = {
         'Content-Type': 'text/xml',
         'Depth':        1
@@ -593,7 +593,7 @@ describe('protocols/webdav', function () {
       }).catch(done);
     });
 
-    it('should emit an error on empty response', function (done) {
+    it('should return an error on empty response', function (done) {
       var headers = {
         'Content-Type': 'text/xml',
         'Depth':        1
@@ -639,7 +639,7 @@ describe('protocols/webdav', function () {
       }).catch(done);
     });
 
-    it('should emit an error on request bad response', function (done) {
+    it('should return an error on request bad response', function (done) {
       var scope = nock('http://www.example.com', {Depth: 'infinity'})
         .delete('/webdav/path/to/directory/')
         .basicAuth(credentials)
@@ -682,7 +682,7 @@ describe('protocols/webdav', function () {
       }).catch(done);
     });
 
-    it('should emit an error on request bad response', function (done) {
+    it('should return an error on request bad response', function (done) {
       var scope = nock('http://www.example.com')
         .delete('/webdav/path/to/file.txt')
         .basicAuth(credentials)
@@ -828,7 +828,7 @@ describe('protocols/webdav', function () {
       });
     });
 
-    it('should throw an error on unconnected client', function () {
+    it('should throw an error with synchronous usage on unconnected client', function () {
       var client = new WebDAVClient(options);
 
       expect(function () {
@@ -836,7 +836,7 @@ describe('protocols/webdav', function () {
       }).to.throw('WebDAV client not connected');
     });
 
-    it('should return an error in callback on unconnected client', function (done) {
+    it('should return an error on unconnected client', function (done) {
       var client = new WebDAVClient(options);
 
       client.request('GET', 'file.txt', function (error) {

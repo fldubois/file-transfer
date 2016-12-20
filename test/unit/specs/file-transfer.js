@@ -70,10 +70,10 @@ describe('file-transfer', function () {
           return done(error);
         }
 
-        expect(client).to.be.an.instanceOf(ClientMock, 'should instantiate a new client');
+        expect(client).to.be.an.instanceOf(ClientMock);
 
-        expect(client.connect.calledOnce).to.equal(true, 'should call connect() on client');
-        expect(client.options).to.equal(options, 'shoul set options on client');
+        expect(client.connect.calledOnce).to.equal(true);
+        expect(client.options).to.equal(options);
 
         done();
       });
@@ -90,10 +90,10 @@ describe('file-transfer', function () {
           return done(error);
         }
 
-        expect(client).to.be.an.instanceOf(ClientMock, 'should instantiate a new client');
+        expect(client).to.be.an.instanceOf(ClientMock);
 
-        expect(client.connect.calledOnce).to.equal(true, 'should call connect() on client');
-        expect(client.options).to.deep.equal({test: true}, 'shoul set options on client');
+        expect(client.connect.calledOnce).to.equal(true);
+        expect(client.options).to.deep.equal({test: true});
 
         done();
       });
@@ -107,19 +107,19 @@ describe('file-transfer', function () {
 
   describe('disposer()', function () {
 
-    it('should automatically close the client', function () {
+    it('should automatically disconnect the client', function () {
       var client  = null;
       var options = {test: true};
 
       return Promise.using(transfer.disposer('sftp', options), function (_client) {
-        expect(_client).to.be.an.instanceOf(ClientMock, 'should instantiate a new client');
+        expect(_client).to.be.an.instanceOf(ClientMock);
 
-        expect(_client.connect.calledOnce).to.equal(true, 'should call connect() on client');
-        expect(_client.options).to.equal(options, 'shoul set options on client');
+        expect(_client.connect.calledOnce).to.equal(true);
+        expect(_client.options).to.equal(options);
 
         client = _client;
       }).then(function () {
-        expect(client.disconnect.calledOnce).to.equal(true, 'should call disconnect() on client');
+        expect(client.disconnect.calledOnce).to.equal(true);
       });
     });
 

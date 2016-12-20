@@ -147,7 +147,7 @@ describe('protocols/ftp', function () {
       });
     });
 
-    it('should transmit errors', function (done) {
+    it('should transmit FTP errors', function (done) {
       createFTPClient().then(function (client) {
         var fakeError = new Error('Fake get() error');
 
@@ -246,7 +246,7 @@ describe('protocols/ftp', function () {
       }).catch(done);
     });
 
-    it('should transmit errors', function (done) {
+    it('should transmit FTP errors', function (done) {
       createFTPClient().then(function (client) {
         var fakeError = new Error('Fake mkdir() error');
 
@@ -282,7 +282,7 @@ describe('protocols/ftp', function () {
       vfs.unset(local);
     });
 
-    it('should download the file via the FTP connection', function (done) {
+    it('should upload the file via the FTP connection', function (done) {
       createFTPClient().then(function (client) {
         vfs.set(local, new Buffer('Hello, friend.'));
 
@@ -299,7 +299,7 @@ describe('protocols/ftp', function () {
       }).catch(done);
     });
 
-    it('should ignore `optionss` parameter', function (done) {
+    it('should ignore `options` parameter', function (done) {
       createFTPClient().then(function (client) {
         vfs.set(local, new Buffer('Hello, friend.'));
 
@@ -383,7 +383,7 @@ describe('protocols/ftp', function () {
       }).catch(done);
     });
 
-    it('should transmit errors', function (done) {
+    it('should transmit FTP errors', function (done) {
       createFTPClient().then(function (client) {
         var fakeError = new Error('Fake list() error');
 
@@ -432,7 +432,7 @@ describe('protocols/ftp', function () {
       }).catch(done);
     });
 
-    it('should transmit errors', function (done) {
+    it('should transmit FTP errors', function (done) {
       createFTPClient().then(function (client) {
         var fakeError = new Error('Fake rmdir() error');
 
@@ -478,7 +478,7 @@ describe('protocols/ftp', function () {
       }).catch(done);
     });
 
-    it('should transmit errors', function (done) {
+    it('should transmit FTP errors', function (done) {
       createFTPClient().then(function (client) {
         var fakeError = new Error('Fake delete() error');
 
