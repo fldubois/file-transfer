@@ -23,7 +23,8 @@
     "test:lint": "eslint lib test",
     "test:unit": "istanbul cover --root 'lib' --include-all-sources true _mocha -- -r test/bootstrap.js --recursive test/unit/specs",
     "test:coverage": "istanbul check-coverage --statements 100 --functions 100 --branches 100 --lines 100",
-    "test:integration": "mocha -r test/bootstrap.js --recursive test/integration/specs"
+    "test:integration": "mocha -r test/bootstrap.js --recursive test/integration/specs",
+    "version": "chlg release $npm_package_version && git add CHANGELOG.md"
   },
   "dependencies": {
     "bluebird": "^3.4.6",
@@ -38,6 +39,7 @@
     "body-parser": "^1.15.2",
     "chai": "^3.5.0",
     "chai-as-promised": "^6.0.0",
+    "chlg-cli": "^1.0.0",
     "eslint": "^2.13.1",
     "express": "^4.14.0",
     "ftpd": "^0.2.15",
