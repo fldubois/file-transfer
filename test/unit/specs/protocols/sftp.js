@@ -341,7 +341,7 @@ describe('protocols/sftp', function () {
       });
     });
 
-    it('should acccept the callback as second parameter', function (done) {
+    it('should acccept the callback as third parameter', function (done) {
       var local  = '/path/to/local/file';
       var remote = '/path/to/remote/file';
 
