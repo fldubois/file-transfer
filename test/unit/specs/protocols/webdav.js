@@ -309,21 +309,19 @@ describe('protocols/webdav', function () {
 
     it('should download the file', function () {
       var scope = nock('http://www.example.com')
-        .get('/webdav/file.txt')
+        .get('/webdav/remote.txt')
         .basicAuth(credentials)
         .reply(200, 'Hello, friend.');
 
-      return vfs.mkdirAsync('dir').then(function () {
-        return createWebDAVClient();
-      }).then(function (client) {
-        return client.get('file.txt', 'dir/file.txt');
+      return createWebDAVClient().then(function (client) {
+        return client.get('remote.txt', 'local.txt');
       }).then(function () {
-        return vfs.readFileAsync('dir/file.txt', 'utf8');
+        return vfs.readFileAsync('local.txt', 'utf8');
       }).then(function (content) {
         expect(scope.isDone()).to.equal(true);
         expect(content.toString()).to.equal('Hello, friend.');
       }).then(function () {
-        vfs.unset('dir');
+        vfs.unset('local.txt');
       });
     });
 

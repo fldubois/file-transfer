@@ -346,7 +346,7 @@ VirtualFS.prototype.createWriteStream = function (filename) {
     setImmediate(function () {
       var error = null;
 
-      if (directory === null) {
+      if (directory === null && filename.indexOf('/') !== -1) {
         error = new Error('ENOENT, readdir \'' + filename + '\'');
 
         error.errno = 34;
