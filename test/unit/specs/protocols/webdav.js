@@ -1,15 +1,21 @@
 'use strict';
 
 var os = require('os');
-var fs = require('fs');
 
-var chai   = require('chai');
-var expect = chai.expect;
-var nock   = require('nock');
+var chai       = require('chai');
+var expect     = chai.expect;
+var nock       = require('nock');
+var proxyquire = require('proxyquire').noCallThru();
 
 var Promise = require('bluebird');
 
-var WebDAVClient = require('lib/protocols/webdav');
+var VirtualFS = require('test/integration/utils/virtual-fs');
+
+var vfs = new VirtualFS();
+
+var WebDAVClient = proxyquire('lib/protocols/webdav', {
+  fs: vfs
+});
 
 var options = {
   host:     'www.example.com',
@@ -25,7 +31,7 @@ var credentials = {
 
 var methods = ['OPTIONS', 'GET', 'PUT', 'DELETE', 'MKCOL', 'PROPFIND'];
 
-Promise.promisifyAll(fs);
+Promise.promisifyAll(vfs);
 
 function createWebDAVClient() {
   nock('http://www.example.com')
@@ -307,22 +313,22 @@ describe('protocols/webdav', function () {
         .basicAuth(credentials)
         .reply(200, 'Hello, friend.');
 
-      var path = os.tmpdir() + '/' + Date.now() + '.txt';
-
-      return createWebDAVClient().then(function (client) {
-        return client.get('file.txt', path);
+      return vfs.mkdirAsync('dir').then(function () {
+        return createWebDAVClient();
+      }).then(function (client) {
+        return client.get('file.txt', 'dir/file.txt');
       }).then(function () {
-        return fs.readFileAsync(path, 'utf8');
+        return vfs.readFileAsync('dir/file.txt', 'utf8');
       }).then(function (content) {
         expect(scope.isDone()).to.equal(true);
-        expect(content).to.equal('Hello, friend.');
-      }).finally(function () {
-        return fs.unlinkAsync(path);
+        expect(content.toString()).to.equal('Hello, friend.');
+      }).then(function () {
+        vfs.unset('dir');
       });
     });
 
     it('should return an error on request bad response', function () {
-      var scope = nock('http://www.example.com')
+      nock('http://www.example.com')
         .get('/webdav/remote.txt')
         .basicAuth(credentials)
         .reply(404);
@@ -381,7 +387,7 @@ describe('protocols/webdav', function () {
     });
 
     it('should return an error on request bad response', function () {
-      var scope = nock('http://www.example.com')
+      nock('http://www.example.com')
         .intercept('/webdav/path/to/directory', 'MKCOL')
         .basicAuth(credentials)
         .reply(400);
@@ -403,14 +409,14 @@ describe('protocols/webdav', function () {
 
       var path = os.tmpdir() + '/' + Date.now() + '.txt';
 
-      return createWebDAVClient().tap(function (client) {
-        return fs.writeFileAsync(path, 'Hello, friend.', 'utf8');
+      return createWebDAVClient().tap(function () {
+        return vfs.writeFileAsync(path, 'Hello, friend.', 'utf8');
       }).then(function (client) {
         return client.put(path, 'file.txt');
       }).then(function () {
         expect(scope.isDone()).to.equal(true);
       }).finally(function () {
-        return fs.unlinkAsync(path);
+        return vfs.unlinkAsync(path);
       });
     });
 
@@ -422,14 +428,14 @@ describe('protocols/webdav', function () {
 
       var path = os.tmpdir() + '/' + Date.now() + '.txt';
 
-      return createWebDAVClient().tap(function (client) {
-        return fs.writeFileAsync(path, 'Hello, friend.', 'utf8');
+      return createWebDAVClient().tap(function () {
+        return vfs.writeFileAsync(path, 'Hello, friend.', 'utf8');
       }).then(function (client) {
         return client.put(path, 'file.txt', {test: true});
       }).then(function () {
         expect(scope.isDone()).to.equal(true);
       }).finally(function () {
-        return fs.unlinkAsync(path);
+        return vfs.unlinkAsync(path);
       });
     });
 
@@ -441,8 +447,8 @@ describe('protocols/webdav', function () {
 
       var path = os.tmpdir() + '/' + Date.now() + '.txt';
 
-      createWebDAVClient().tap(function (client) {
-        return fs.writeFileAsync(path, 'Hello, friend.', 'utf8');
+      createWebDAVClient().tap(function () {
+        return vfs.writeFileAsync(path, 'Hello, friend.', 'utf8');
       }).then(function (client) {
         client.put(path, 'file.txt', function (error) {
           if (error) {
@@ -454,24 +460,24 @@ describe('protocols/webdav', function () {
           return done();
         });
       }).catch(done).finally(function () {
-        return fs.unlinkAsync(path);
+        return vfs.unlinkAsync(path);
       });
     });
 
     it('should return an error on request bad response', function () {
-      var scope = nock('http://www.example.com')
+      nock('http://www.example.com')
         .put('/webdav/file.txt', 'Hello, friend.')
         .basicAuth(credentials)
         .reply(400);
 
       var path = os.tmpdir() + '/' + Date.now() + '.txt';
 
-      return createWebDAVClient().tap(function (client) {
-        return fs.writeFileAsync(path, 'Hello, friend.', 'utf8');
+      return createWebDAVClient().tap(function () {
+        return vfs.writeFileAsync(path, 'Hello, friend.', 'utf8');
       }).then(function (client) {
         return expect(client.put(path, 'file.txt')).to.be.rejectedWith('WebDAV request error');
       }).finally(function () {
-        return fs.unlinkAsync(path);
+        return vfs.unlinkAsync(path);
       });
     });
 
@@ -525,7 +531,7 @@ describe('protocols/webdav', function () {
         'Depth':        1
       };
 
-      var scope = nock('http://www.example.com', headers)
+      nock('http://www.example.com', headers)
         .intercept('/webdav/dir', 'PROPFIND')
         .basicAuth(credentials)
         .reply(400);
@@ -541,7 +547,7 @@ describe('protocols/webdav', function () {
         'Depth':        1
       };
 
-      var scope = nock('http://www.example.com', headers)
+      nock('http://www.example.com', headers)
         .intercept('/webdav/dir', 'PROPFIND')
         .basicAuth(credentials)
         .reply(200, 'Not an XML');
@@ -557,7 +563,7 @@ describe('protocols/webdav', function () {
         'Depth':        1
       };
 
-      var scope = nock('http://www.example.com', headers)
+      nock('http://www.example.com', headers)
         .intercept('/webdav/dir', 'PROPFIND')
         .basicAuth(credentials)
         .reply(200, '');
@@ -585,7 +591,7 @@ describe('protocols/webdav', function () {
     });
 
     it('should return an error on request bad response', function () {
-      var scope = nock('http://www.example.com', {Depth: 'infinity'})
+      nock('http://www.example.com', {Depth: 'infinity'})
         .delete('/webdav/path/to/directory/')
         .basicAuth(credentials)
         .reply(400);
@@ -613,7 +619,7 @@ describe('protocols/webdav', function () {
     });
 
     it('should return an error on request bad response', function () {
-      var scope = nock('http://www.example.com')
+      nock('http://www.example.com')
         .delete('/webdav/path/to/file.txt')
         .basicAuth(credentials)
         .reply(400);
