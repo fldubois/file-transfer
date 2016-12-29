@@ -14,7 +14,7 @@ SFTP client use the [`ssh2` module]() behind, so SFTP specific options are in fa
 
 ---
 
-##### [Constructor](client.md#client)
+##### [Client constructor](client.md#client-constructor)
 
 ```js
 new Client(options) -> Client
@@ -78,7 +78,7 @@ SFTP Client has no Additional methods.
 
 ---
 
-##### [Constructor](client.md#client)
+##### [Client constructor](client.md#client-constructor)
 
 ```js
 new Client(options) -> Client
@@ -138,7 +138,7 @@ FTP Client has no Additional methods.
 
 #### Specific options
 
-##### [Constructor](client.md#client)
+##### [Client constructor](client.md#client-constructor)
 
 ```js
 new Client(options) -> Client

@@ -193,6 +193,44 @@ describe('protocols/webdav', function () {
 
   });
 
+  describe('checkConnection()', function () {
+
+    it('should resolve when the client is connected', function () {
+      nock('http://www.example.com')
+        .intercept('/webdav/', 'OPTIONS')
+        .basicAuth(credentials)
+        .reply(200, '', {
+          allow: methods.join(',')
+        });
+
+      var client = new WebDAVClient(options);
+
+      return client.connect().then(function () {
+        return expect(client.checkConnection()).to.be.fullfiled;
+      });
+    });
+
+    it('should resolve when the client is not connected', function () {
+      var client = new WebDAVClient(options);
+
+      return expect(client.checkConnection()).to.be.rejectedWith('WebDAV client not connected');
+    });
+
+  });
+
+  describe('disconnect()', function () {
+
+    it('should set connected to false and return null', function (done) {
+      createWebDAVClient().then(function (client) {
+        expect(client.disconnect()).to.equal(null);
+        expect(client.connected).to.equal(false);
+
+        return done();
+      }).catch(done);
+    });
+
+  });
+
   describe('supportsStreams()', function () {
 
     it('should return true', function () {
@@ -335,65 +373,6 @@ describe('protocols/webdav', function () {
         return expect(client.get('remote.txt', 'local.txt')).to.be.rejectedWith('WebDAV request error');
       });
     });
-  });
-
-  describe('mkdir()', function () {
-
-    it('should send a MKCOL request', function () {
-      var scope = nock('http://www.example.com')
-        .intercept('/webdav/path/to/directory', 'MKCOL')
-        .basicAuth(credentials)
-        .reply(201);
-
-      return createWebDAVClient().then(function (client) {
-        return client.mkdir('path/to/directory');
-      }).then(function () {
-        expect(scope.isDone()).to.equal(true);
-      });
-    });
-
-    it('should ignore `mode` parameter', function () {
-      var scope = nock('http://www.example.com')
-        .intercept('/webdav/path/to/directory', 'MKCOL')
-        .basicAuth(credentials)
-        .reply(201);
-
-      return createWebDAVClient().then(function (client) {
-        return client.mkdir('path/to/directory', '0775');
-      }).then(function () {
-        expect(scope.isDone()).to.equal(true);
-      });
-    });
-
-    it('should acccept the callback as second parameter', function (done) {
-      var scope = nock('http://www.example.com')
-        .intercept('/webdav/path/to/directory', 'MKCOL')
-        .basicAuth(credentials)
-        .reply(201);
-
-      createWebDAVClient().then(function (client) {
-        client.mkdir('path/to/directory', function (error) {
-          if (error) {
-            return done(error);
-          }
-
-          expect(scope.isDone()).to.equal(true);
-
-          return done();
-        });
-      }).catch(done);
-    });
-
-    it('should return an error on request bad response', function () {
-      nock('http://www.example.com')
-        .intercept('/webdav/path/to/directory', 'MKCOL')
-        .basicAuth(credentials)
-        .reply(400);
-
-      return createWebDAVClient().then(function (client) {
-        return expect(client.mkdir('path/to/directory')).to.be.rejectedWith('WebDAV request error');
-      });
-    });
 
   });
 
@@ -476,6 +455,34 @@ describe('protocols/webdav', function () {
         return expect(client.put(path, 'file.txt')).to.be.rejectedWith('WebDAV request error');
       }).finally(function () {
         return vfs.unlinkAsync(path);
+      });
+    });
+
+  });
+
+  describe('unlink()', function () {
+
+    it('should delete the WebDAV file', function () {
+      var scope = nock('http://www.example.com')
+        .delete('/webdav/path/to/file.txt')
+        .basicAuth(credentials)
+        .reply(201);
+
+      return createWebDAVClient().then(function (client) {
+        return client.unlink('path/to/file.txt');
+      }).then(function () {
+        expect(scope.isDone()).to.equal(true);
+      });
+    });
+
+    it('should return an error on request bad response', function () {
+      nock('http://www.example.com')
+        .delete('/webdav/path/to/file.txt')
+        .basicAuth(credentials)
+        .reply(400);
+
+      return createWebDAVClient().then(function (client) {
+        return expect(client.unlink('path/to/file.txt')).to.be.rejectedWith('WebDAV request error');
       });
     });
 
@@ -573,6 +580,66 @@ describe('protocols/webdav', function () {
 
   });
 
+  describe('mkdir()', function () {
+
+    it('should send a MKCOL request', function () {
+      var scope = nock('http://www.example.com')
+        .intercept('/webdav/path/to/directory', 'MKCOL')
+        .basicAuth(credentials)
+        .reply(201);
+
+      return createWebDAVClient().then(function (client) {
+        return client.mkdir('path/to/directory');
+      }).then(function () {
+        expect(scope.isDone()).to.equal(true);
+      });
+    });
+
+    it('should ignore `mode` parameter', function () {
+      var scope = nock('http://www.example.com')
+        .intercept('/webdav/path/to/directory', 'MKCOL')
+        .basicAuth(credentials)
+        .reply(201);
+
+      return createWebDAVClient().then(function (client) {
+        return client.mkdir('path/to/directory', '0775');
+      }).then(function () {
+        expect(scope.isDone()).to.equal(true);
+      });
+    });
+
+    it('should acccept the callback as second parameter', function (done) {
+      var scope = nock('http://www.example.com')
+        .intercept('/webdav/path/to/directory', 'MKCOL')
+        .basicAuth(credentials)
+        .reply(201);
+
+      createWebDAVClient().then(function (client) {
+        client.mkdir('path/to/directory', function (error) {
+          if (error) {
+            return done(error);
+          }
+
+          expect(scope.isDone()).to.equal(true);
+
+          return done();
+        });
+      }).catch(done);
+    });
+
+    it('should return an error on request bad response', function () {
+      nock('http://www.example.com')
+        .intercept('/webdav/path/to/directory', 'MKCOL')
+        .basicAuth(credentials)
+        .reply(400);
+
+      return createWebDAVClient().then(function (client) {
+        return expect(client.mkdir('path/to/directory')).to.be.rejectedWith('WebDAV request error');
+      });
+    });
+
+  });
+
   describe('rmdir()', function () {
 
     it('should delete the WebDAV collection', function () {
@@ -597,47 +664,6 @@ describe('protocols/webdav', function () {
       return createWebDAVClient().then(function (client) {
         return expect(client.rmdir('path/to/directory/')).to.be.rejectedWith('WebDAV request error');
       });
-    });
-
-  });
-
-  describe('unlink()', function () {
-
-    it('should delete the WebDAV file', function () {
-      var scope = nock('http://www.example.com')
-        .delete('/webdav/path/to/file.txt')
-        .basicAuth(credentials)
-        .reply(201);
-
-      return createWebDAVClient().then(function (client) {
-        return client.unlink('path/to/file.txt');
-      }).then(function () {
-        expect(scope.isDone()).to.equal(true);
-      });
-    });
-
-    it('should return an error on request bad response', function () {
-      nock('http://www.example.com')
-        .delete('/webdav/path/to/file.txt')
-        .basicAuth(credentials)
-        .reply(400);
-
-      return createWebDAVClient().then(function (client) {
-        return expect(client.unlink('path/to/file.txt')).to.be.rejectedWith('WebDAV request error');
-      });
-    });
-
-  });
-
-  describe('disconnect()', function () {
-
-    it('should set connected to false and return null', function (done) {
-      createWebDAVClient().then(function (client) {
-        expect(client.disconnect()).to.equal(null);
-        expect(client.connected).to.equal(false);
-
-        return done();
-      }).catch(done);
     });
 
   });

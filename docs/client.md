@@ -1,24 +1,23 @@
 ## Client API
 
-* [Client](#client)
+* [Client constructor](#client-constructor)
+* [connect](#connect)
 * [isConnected](#isconnected)
 * [checkConnection](#checkconnection)
+* [disconnect](#disconnect)
 * [supportsStreams](#supportsstreams)
 * [createReadStream](#createreadstream)
 * [createWriteStream](#createwritestream)
 * [get](#get)
-* [mkdir](#mkdir)
 * [put](#put)
-* [readdir](#readdir)
-* [rmdir](#rmdir)
 * [unlink](#unlink)
-* [disconnect](#disconnect)
+* [readdir](#readdir)
+* [mkdir](#mkdir)
+* [rmdir](#rmdir)
 
 ---
 
-### Client
-
-> Client constructor.
+### Client constructor
 
 ##### Usage
 
@@ -83,6 +82,20 @@ client.isConnected() -> boolean
 
 ```js
 client.checkConnection() -> Promise
+```
+
+[▲ Back to top](#client-api)
+
+---
+
+### disconnect
+
+> Close the client connection.
+
+##### Usage
+
+```js
+client.disconnect() -> null
 ```
 
 [▲ Back to top](#client-api)
@@ -166,27 +179,6 @@ client.get(remote, local) -> Promise
 
 ---
 
-### mkdir
-
-> Create a directory on the remote server.
-
-##### Usage
-
-```js
-client.mkdir(path, options) -> Promise
-```
-
-##### Parameters
-
-| Parameter | Type(s)  | Required | Default | Description                               |
-| --------- | -------- | -------- | --------| ----------------------------------------- |
-| `path`    | `string` | **Yes**  |         | Directory path                            |
-| `options` | `object` | No       | `{}`    | [Protocol specific options](protocols.md) |
-
-[▲ Back to top](#client-api)
-
----
-
 ### put
 
 > Upload the local file.
@@ -204,6 +196,26 @@ client.put(local, remote, options) -> Promise
 | `local`   | `string` | **Yes**  |         | Local file path                           |
 | `remote`  | `string` | **Yes**  |         | Remote file path                          |
 | `options` | `object` | No       | `{}`    | [Protocol specific options](protocols.md) |
+
+[▲ Back to top](#client-api)
+
+---
+
+### unlink
+
+> Delete a file.
+
+##### Usage
+
+```js
+client.unlink(path) -> Promise
+```
+
+##### Parameters
+
+| Parameter | Type(s)  | Required | Default | Description |
+| --------- | -------- | -------- | --------| ----------- |
+| `path`    | `string` | **Yes**  |         | File path   |
 
 [▲ Back to top](#client-api)
 
@@ -233,6 +245,27 @@ An `Array` containing the filenames
 
 ---
 
+### mkdir
+
+> Create a directory on the remote server.
+
+##### Usage
+
+```js
+client.mkdir(path, options) -> Promise
+```
+
+##### Parameters
+
+| Parameter | Type(s)  | Required | Default | Description                               |
+| --------- | -------- | -------- | --------| ----------------------------------------- |
+| `path`    | `string` | **Yes**  |         | Directory path                            |
+| `options` | `object` | No       | `{}`    | [Protocol specific options](protocols.md) |
+
+[▲ Back to top](#client-api)
+
+---
+
 ### rmdir
 
 > Delete a directory.
@@ -248,39 +281,5 @@ client.rmdir(path) -> Promise
 | Parameter | Type(s)  | Required | Default | Description    |
 | --------- | -------- | -------- | --------| -------------- |
 | `path`    | `string` | **Yes**  |         | Directory path |
-
-[▲ Back to top](#client-api)
-
----
-
-### unlink
-
-> Delete a file.
-
-##### Usage
-
-```js
-client.unlink(path) -> Promise
-```
-
-##### Parameters
-
-| Parameter | Type(s)  | Required | Default | Description |
-| --------- | -------- | -------- | --------| ----------- |
-| `path`    | `string` | **Yes**  |         | File path   |
-
-[▲ Back to top](#client-api)
-
----
-
-### disconnect
-
-> Close the client connection.
-
-##### Usage
-
-```js
-client.disconnect() -> null
-```
 
 [▲ Back to top](#client-api)

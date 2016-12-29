@@ -121,37 +121,34 @@ describe('protocols/sftp', function () {
 
   });
 
-  describe('get()', function () {
+  describe('disconnect()', function () {
 
-    it('should download the file via the SFTP connection', function () {
-      var remote = '/path/to/remote/file';
-      var local  = '/path/to/local/file';
+    it('should close the SSH connection', function (done) {
+      createSFTPClient().then(function (client) {
+        expect(client.connected).to.equal(true);
 
-      return createSFTPClient().tap(function (client) {
-        return client.get(remote, local);
-      }).then(function (client) {
-        expect(client.sftp.fastGet).to.have.callCount(1);
-        expect(client.sftp.fastGet).to.have.been.calledWith(remote, local);
-      });
+        expect(client.client.end).to.have.callCount(0);
+
+        client.disconnect();
+
+        expect(client.client.end).to.have.callCount(1);
+
+        expect(client.connected).to.equal(false);
+
+        return done();
+      }).catch(done);
     });
 
-    it('should transmit SFTP errors', function () {
-      var fakeError = new Error('Fake fastGet() error');
-
-      ssh2.setError('fastGet', fakeError);
-
-      return createSFTPClient().then(function (client) {
-        return expect(client.get('/path/to/remote/file', '/path/to/local/file')).to.be.rejectedWith(fakeError);
-      });
-    });
-
-    it('should fail if the client is not connected', function () {
-      var remote = '/path/to/remote/file';
-      var local  = '/path/to/local/file';
-
+    it('should do nothing on unconnected client', function () {
       var client = new SFTPClient({});
 
-      return expect(client.get(remote, local)).to.be.rejectedWith('SFTP client not connected');
+      expect(client.connected).to.equal(false);
+      expect(client.client.end).to.have.callCount(0);
+
+      client.disconnect();
+
+      expect(client.connected).to.equal(false);
+      expect(client.client.end).to.have.callCount(0);
     });
 
   });
@@ -256,61 +253,37 @@ describe('protocols/sftp', function () {
 
   });
 
-  describe('mkdir()', function () {
+  describe('get()', function () {
 
-    it('should create a directory via the SFTP connection', function () {
-      var path = '/path/to/directory';
-
-      return createSFTPClient().tap(function (client) {
-        return client.mkdir(path);
-      }).then(function (client) {
-        expect(client.sftp.mkdir).to.have.callCount(1);
-        expect(client.sftp.mkdir).to.have.been.calledWith(path);
-      });
-    });
-
-    it('should accept `mode` option', function () {
-      var path = '/path/to/directory';
+    it('should download the file via the SFTP connection', function () {
+      var remote = '/path/to/remote/file';
+      var local  = '/path/to/local/file';
 
       return createSFTPClient().tap(function (client) {
-        return client.mkdir(path, {mode: '0775'});
+        return client.get(remote, local);
       }).then(function (client) {
-        expect(client.sftp.mkdir).to.have.callCount(1);
-        expect(client.sftp.mkdir).to.have.been.calledWith(path, {mode: '0775'});
+        expect(client.sftp.fastGet).to.have.callCount(1);
+        expect(client.sftp.fastGet).to.have.been.calledWith(remote, local);
       });
-    });
-
-    it('should acccept the callback as second parameter', function (done) {
-      var path = '/path/to/directory';
-
-      createSFTPClient().then(function (client) {
-        client.mkdir(path, function (error) {
-          if (error) {
-            return done(error);
-          }
-
-          expect(client.sftp.mkdir).to.have.callCount(1);
-          expect(client.sftp.mkdir).to.have.been.calledWith(path);
-
-          return done();
-        });
-      }).catch(done);
     });
 
     it('should transmit SFTP errors', function () {
-      var fakeError = new Error('Fake mkdir() error');
+      var fakeError = new Error('Fake fastGet() error');
 
-      ssh2.setError('mkdir', fakeError);
+      ssh2.setError('fastGet', fakeError);
 
       return createSFTPClient().then(function (client) {
-        return expect(client.mkdir('/path/to/directory')).to.be.rejectedWith(fakeError);
+        return expect(client.get('/path/to/remote/file', '/path/to/local/file')).to.be.rejectedWith(fakeError);
       });
     });
 
     it('should fail if the client is not connected', function () {
+      var remote = '/path/to/remote/file';
+      var local  = '/path/to/local/file';
+
       var client = new SFTPClient({});
 
-      return expect(client.mkdir('/path/to/directory')).to.be.rejectedWith('SFTP client not connected');
+      return expect(client.get(remote, local)).to.be.rejectedWith('SFTP client not connected');
     });
 
   });
@@ -380,6 +353,37 @@ describe('protocols/sftp', function () {
 
   });
 
+  describe('unlink()', function () {
+
+    it('should delete the file via the SFTP connection', function () {
+      var path = '/path/to/file';
+
+      return createSFTPClient().tap(function (client) {
+        return client.unlink(path);
+      }).then(function (client) {
+        expect(client.sftp.unlink).to.have.callCount(1);
+        expect(client.sftp.unlink).to.have.been.calledWith(path);
+      });
+    });
+
+    it('should transmit SFTP errors', function () {
+      var fakeError = new Error('Fake unlink() error');
+
+      ssh2.setError('unlink', fakeError);
+
+      return createSFTPClient().then(function (client) {
+        return expect(client.unlink('/path/to/file')).to.be.rejectedWith(fakeError);
+      });
+    });
+
+    it('should fail if the client is not connected', function () {
+      var client = new SFTPClient({});
+
+      return expect(client.unlink('/path/to/file')).to.be.rejectedWith('SFTP client not connected');
+    });
+
+  });
+
   describe('readdir()', function () {
 
     it('should return a list of filenames', function () {
@@ -421,6 +425,65 @@ describe('protocols/sftp', function () {
 
   });
 
+  describe('mkdir()', function () {
+
+    it('should create a directory via the SFTP connection', function () {
+      var path = '/path/to/directory';
+
+      return createSFTPClient().tap(function (client) {
+        return client.mkdir(path);
+      }).then(function (client) {
+        expect(client.sftp.mkdir).to.have.callCount(1);
+        expect(client.sftp.mkdir).to.have.been.calledWith(path);
+      });
+    });
+
+    it('should accept `mode` option', function () {
+      var path = '/path/to/directory';
+
+      return createSFTPClient().tap(function (client) {
+        return client.mkdir(path, {mode: '0775'});
+      }).then(function (client) {
+        expect(client.sftp.mkdir).to.have.callCount(1);
+        expect(client.sftp.mkdir).to.have.been.calledWith(path, {mode: '0775'});
+      });
+    });
+
+    it('should acccept the callback as second parameter', function (done) {
+      var path = '/path/to/directory';
+
+      createSFTPClient().then(function (client) {
+        client.mkdir(path, function (error) {
+          if (error) {
+            return done(error);
+          }
+
+          expect(client.sftp.mkdir).to.have.callCount(1);
+          expect(client.sftp.mkdir).to.have.been.calledWith(path);
+
+          return done();
+        });
+      }).catch(done);
+    });
+
+    it('should transmit SFTP errors', function () {
+      var fakeError = new Error('Fake mkdir() error');
+
+      ssh2.setError('mkdir', fakeError);
+
+      return createSFTPClient().then(function (client) {
+        return expect(client.mkdir('/path/to/directory')).to.be.rejectedWith(fakeError);
+      });
+    });
+
+    it('should fail if the client is not connected', function () {
+      var client = new SFTPClient({});
+
+      return expect(client.mkdir('/path/to/directory')).to.be.rejectedWith('SFTP client not connected');
+    });
+
+  });
+
   describe('rmdir()', function () {
 
     it('should delete the directory via the SFTP connection', function () {
@@ -448,69 +511,6 @@ describe('protocols/sftp', function () {
       var client = new SFTPClient({});
 
       return expect(client.rmdir('/path/to/directory')).to.be.rejectedWith('SFTP client not connected');
-    });
-
-  });
-
-  describe('unlink()', function () {
-
-    it('should delete the file via the SFTP connection', function () {
-      var path = '/path/to/file';
-
-      return createSFTPClient().tap(function (client) {
-        return client.unlink(path);
-      }).then(function (client) {
-        expect(client.sftp.unlink).to.have.callCount(1);
-        expect(client.sftp.unlink).to.have.been.calledWith(path);
-      });
-    });
-
-    it('should transmit SFTP errors', function () {
-      var fakeError = new Error('Fake unlink() error');
-
-      ssh2.setError('unlink', fakeError);
-
-      return createSFTPClient().then(function (client) {
-        return expect(client.unlink('/path/to/file')).to.be.rejectedWith(fakeError);
-      });
-    });
-
-    it('should fail if the client is not connected', function () {
-      var client = new SFTPClient({});
-
-      return expect(client.unlink('/path/to/file')).to.be.rejectedWith('SFTP client not connected');
-    });
-
-  });
-
-  describe('disconnect()', function () {
-
-    it('should close the SSH connection', function (done) {
-      createSFTPClient().then(function (client) {
-        expect(client.connected).to.equal(true);
-
-        expect(client.client.end).to.have.callCount(0);
-
-        client.disconnect();
-
-        expect(client.client.end).to.have.callCount(1);
-
-        expect(client.connected).to.equal(false);
-
-        return done();
-      }).catch(done);
-    });
-
-    it('should do nothing on unconnected client', function () {
-      var client = new SFTPClient({});
-
-      expect(client.connected).to.equal(false);
-      expect(client.client.end).to.have.callCount(0);
-
-      client.disconnect();
-
-      expect(client.connected).to.equal(false);
-      expect(client.client.end).to.have.callCount(0);
     });
 
   });

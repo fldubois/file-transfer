@@ -116,39 +116,34 @@ describe('protocols/ftp', function () {
 
   });
 
-  describe('get()', function () {
+  describe('disconnect()', function () {
 
-    it('should download the file via the FTP connection', function () {
-      var path = os.tmpdir() + '/' + Date.now() + '.txt';
+    it('should close the SSH connection', function (done) {
+      createFTPClient().then(function (client) {
+        expect(client.connected).to.equal(true);
 
-      return vfs.mkdirAsync(os.tmpdir()).then(function () {
-        return createFTPClient();
-      }).tap(function (client) {
-        return client.get('file.txt', path);
-      }).then(function (client) {
-        expect(client.client.get).to.have.callCount(1);
-        expect(client.client.get).to.have.been.calledWith('file.txt');
+        expect(client.client.end).to.have.callCount(0);
 
-        return expect(vfs.readFileAsync(path, 'utf8').call('toString')).to.eventually.equal('Hello, friend.');
-      }).finally(function () {
-        return vfs.unlinkAsync(path);
-      });
+        client.disconnect();
+
+        expect(client.client.end).to.have.callCount(1);
+
+        expect(client.connected).to.equal(false);
+
+        return done();
+      }).catch(done);
     });
 
-    it('should transmit FTP errors', function () {
-      var fakeError = new Error('Fake get() error');
-
-      ftp.setError('get', fakeError);
-
-      return createFTPClient().then(function (client) {
-        expect(client.get('/path/to/remote/file', '/path/to/local/file')).to.be.rejectedWith(fakeError);
-      });
-    });
-
-    it('should fail if the client is not connected', function () {
+    it('should do nothing on unconnected client', function () {
       var client = new FTPClient({});
 
-      expect(client.get('/path/to/remote/file', '/path/to/local/file')).to.be.rejectedWith('FTP client not connected');
+      expect(client.connected).to.equal(false);
+      expect(client.client.end).to.have.callCount(0);
+
+      client.disconnect();
+
+      expect(client.connected).to.equal(false);
+      expect(client.client.end).to.have.callCount(0);
     });
 
   });
@@ -189,61 +184,39 @@ describe('protocols/ftp', function () {
 
   });
 
-  describe('mkdir()', function () {
+  describe('get()', function () {
 
-    it('should create a directory via the FTP connection', function () {
-      var path = '/path/to/directory';
+    it('should download the file via the FTP connection', function () {
+      var path = os.tmpdir() + '/' + Date.now() + '.txt';
 
-      return createFTPClient().tap(function (client) {
-        return client.mkdir(path);
+      return vfs.mkdirAsync(os.tmpdir()).then(function () {
+        return createFTPClient();
+      }).tap(function (client) {
+        return client.get('file.txt', path);
       }).then(function (client) {
-        expect(client.client.mkdir).to.have.callCount(1);
-        expect(client.client.mkdir).to.have.been.calledWith(path);
+        expect(client.client.get).to.have.callCount(1);
+        expect(client.client.get).to.have.been.calledWith('file.txt');
+
+        return expect(vfs.readFileAsync(path, 'utf8').call('toString')).to.eventually.equal('Hello, friend.');
+      }).finally(function () {
+        return vfs.unlinkAsync(path);
       });
-    });
-
-    it('should ignore `options`parameter', function () {
-      var path = '/path/to/directory';
-
-      return createFTPClient().tap(function (client) {
-        return client.mkdir(path, {test: true});
-      }).then(function (client) {
-        expect(client.client.mkdir).to.have.callCount(1);
-        expect(client.client.mkdir).to.have.been.calledWith(path);
-      });
-    });
-
-    it('should acccept the callback as second parameter', function (done) {
-      var path = '/path/to/directory';
-
-      createFTPClient().then(function (client) {
-        client.mkdir(path, function (error) {
-          if (error) {
-            return done(error);
-          }
-
-          expect(client.client.mkdir).to.have.callCount(1);
-          expect(client.client.mkdir).to.have.been.calledWith(path);
-
-          return done();
-        });
-      }).catch(done);
     });
 
     it('should transmit FTP errors', function () {
-      var fakeError = new Error('Fake mkdir() error');
+      var fakeError = new Error('Fake get() error');
 
-      ftp.setError('mkdir', fakeError);
+      ftp.setError('get', fakeError);
 
       return createFTPClient().then(function (client) {
-        expect(client.mkdir('/path/to/directory')).to.be.rejectedWith(fakeError);
+        expect(client.get('/path/to/remote/file', '/path/to/local/file')).to.be.rejectedWith(fakeError);
       });
     });
 
     it('should fail if the client is not connected', function () {
       var client = new FTPClient({});
 
-      expect(client.mkdir('/path/to/directory')).to.be.rejectedWith('FTP client not connected');
+      expect(client.get('/path/to/remote/file', '/path/to/local/file')).to.be.rejectedWith('FTP client not connected');
     });
 
   });
@@ -318,6 +291,37 @@ describe('protocols/ftp', function () {
 
   });
 
+  describe('unlink()', function () {
+
+    it('should delete the file via the FTP connection', function () {
+      var path = '/path/to/file';
+
+      return createFTPClient().tap(function (client) {
+        return client.unlink(path);
+      }).then(function (client) {
+        expect(client.client.delete).to.have.callCount(1);
+        expect(client.client.delete).to.have.been.calledWith(path);
+      });
+    });
+
+    it('should transmit FTP errors', function () {
+      var fakeError = new Error('Fake delete() error');
+
+      ftp.setError('delete', fakeError);
+
+      return createFTPClient().then(function (client) {
+        expect(client.unlink('/path/to/file')).to.be.rejectedWith(fakeError);
+      });
+    });
+
+    it('should fail if the client is not connected', function () {
+      var client = new FTPClient({});
+
+      expect(client.unlink('/path/to/file')).to.be.rejectedWith('FTP client not connected');
+    });
+
+  });
+
   describe('readdir()', function () {
 
     it('should return a list of filenames', function () {
@@ -359,6 +363,65 @@ describe('protocols/ftp', function () {
 
   });
 
+  describe('mkdir()', function () {
+
+    it('should create a directory via the FTP connection', function () {
+      var path = '/path/to/directory';
+
+      return createFTPClient().tap(function (client) {
+        return client.mkdir(path);
+      }).then(function (client) {
+        expect(client.client.mkdir).to.have.callCount(1);
+        expect(client.client.mkdir).to.have.been.calledWith(path);
+      });
+    });
+
+    it('should ignore `options`parameter', function () {
+      var path = '/path/to/directory';
+
+      return createFTPClient().tap(function (client) {
+        return client.mkdir(path, {test: true});
+      }).then(function (client) {
+        expect(client.client.mkdir).to.have.callCount(1);
+        expect(client.client.mkdir).to.have.been.calledWith(path);
+      });
+    });
+
+    it('should acccept the callback as second parameter', function (done) {
+      var path = '/path/to/directory';
+
+      createFTPClient().then(function (client) {
+        client.mkdir(path, function (error) {
+          if (error) {
+            return done(error);
+          }
+
+          expect(client.client.mkdir).to.have.callCount(1);
+          expect(client.client.mkdir).to.have.been.calledWith(path);
+
+          return done();
+        });
+      }).catch(done);
+    });
+
+    it('should transmit FTP errors', function () {
+      var fakeError = new Error('Fake mkdir() error');
+
+      ftp.setError('mkdir', fakeError);
+
+      return createFTPClient().then(function (client) {
+        expect(client.mkdir('/path/to/directory')).to.be.rejectedWith(fakeError);
+      });
+    });
+
+    it('should fail if the client is not connected', function () {
+      var client = new FTPClient({});
+
+      expect(client.mkdir('/path/to/directory')).to.be.rejectedWith('FTP client not connected');
+    });
+
+  });
+
   describe('rmdir()', function () {
 
     it('should delete the directory', function () {
@@ -386,69 +449,6 @@ describe('protocols/ftp', function () {
       var client = new FTPClient({});
 
       expect(client.rmdir('/path/to/directory')).to.be.rejectedWith('FTP client not connected');
-    });
-
-  });
-
-  describe('unlink()', function () {
-
-    it('should delete the file via the FTP connection', function () {
-      var path = '/path/to/file';
-
-      return createFTPClient().tap(function (client) {
-        return client.unlink(path);
-      }).then(function (client) {
-        expect(client.client.delete).to.have.callCount(1);
-        expect(client.client.delete).to.have.been.calledWith(path);
-      });
-    });
-
-    it('should transmit FTP errors', function () {
-      var fakeError = new Error('Fake delete() error');
-
-      ftp.setError('delete', fakeError);
-
-      return createFTPClient().then(function (client) {
-        expect(client.unlink('/path/to/file')).to.be.rejectedWith(fakeError);
-      });
-    });
-
-    it('should fail if the client is not connected', function () {
-      var client = new FTPClient({});
-
-      expect(client.unlink('/path/to/file')).to.be.rejectedWith('FTP client not connected');
-    });
-
-  });
-
-  describe('disconnect()', function () {
-
-    it('should close the SSH connection', function (done) {
-      createFTPClient().then(function (client) {
-        expect(client.connected).to.equal(true);
-
-        expect(client.client.end).to.have.callCount(0);
-
-        client.disconnect();
-
-        expect(client.client.end).to.have.callCount(1);
-
-        expect(client.connected).to.equal(false);
-
-        return done();
-      }).catch(done);
-    });
-
-    it('should do nothing on unconnected client', function () {
-      var client = new FTPClient({});
-
-      expect(client.connected).to.equal(false);
-      expect(client.client.end).to.have.callCount(0);
-
-      client.disconnect();
-
-      expect(client.connected).to.equal(false);
-      expect(client.client.end).to.have.callCount(0);
     });
 
   });
