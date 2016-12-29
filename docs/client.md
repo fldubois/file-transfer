@@ -41,6 +41,8 @@ new Client(options) -> Client
 | `user` / `username` | `string` | **Yes**  | User name                                             |
 | `pass` / `password` | `string` | **Yes**  | User password                                         |
 
+For protocols' specific options, see [protocols documentation](protocols.md).
+
 [▲ Back to top](#client-api)
 
 ---
@@ -113,10 +115,10 @@ client.createReadStream(path, options) -> Readable
 
 ##### Parameters
 
-| Parameter | Type(s)  | Required | Default | Description             |
-| --------- | -------- | -------- | --------| ----------------------- |
-| `path`    | `string` | **Yes**  |         | File path               |
-| `options` | `object` | No       | `{}`    | Client specific options |
+| Parameter | Type(s)  | Required | Default | Description                               |
+| --------- | -------- | -------- | --------| ----------------------------------------- |
+| `path`    | `string` | **Yes**  |         | File path                                 |
+| `options` | `object` | No       | `{}`    | [Protocol specific options](protocols.md) |
 
 [▲ Back to top](#client-api)
 
@@ -134,10 +136,10 @@ client.createWriteStream(path, options) -> Writable
 
 ##### Parameters
 
-| Parameter | Type(s)  | Required | Default | Description             |
-| --------- | -------- | -------- | --------| ----------------------- |
-| `path`    | `string` | **Yes**  |         | File path               |
-| `options` | `object` | No       | `{}`    | Client specific options |
+| Parameter | Type(s)  | Required | Default | Description                               |
+| --------- | -------- | -------- | --------| ----------------------------------------- |
+| `path`    | `string` | **Yes**  |         | File path                                 |
+| `options` | `object` | No       | `{}`    | [Protocol specific options](protocols.md) |
 
 [▲ Back to top](#client-api)
 
@@ -176,10 +178,10 @@ client.mkdir(path, options) -> Promise
 
 ##### Parameters
 
-| Parameter | Type(s)  | Required | Default | Description             |
-| --------- | -------- | -------- | --------| ----------------------- |
-| `path`    | `string` | **Yes**  |         | Directory path          |
-| `options` | `object` | No       | `{}`    | Client specific options |
+| Parameter | Type(s)  | Required | Default | Description                               |
+| --------- | -------- | -------- | --------| ----------------------------------------- |
+| `path`    | `string` | **Yes**  |         | Directory path                            |
+| `options` | `object` | No       | `{}`    | [Protocol specific options](protocols.md) |
 
 [▲ Back to top](#client-api)
 
@@ -192,15 +194,16 @@ client.mkdir(path, options) -> Promise
 ##### Usage
 
 ```js
-client.put(local, remote) -> Promise
+client.put(local, remote, options) -> Promise
 ```
 
 ##### Parameters
 
-| Parameter | Type(s)  | Required | Default | Description      |
-| --------- | -------- | -------- | --------| ---------------- |
-| `local`   | `string` | **Yes**  |         | Local file path  |
-| `remote`  | `string` | **Yes**  |         | Remote file path |
+| Parameter | Type(s)  | Required | Default | Description                               |
+| --------- | -------- | -------- | --------| ----------------------------------------- |
+| `local`   | `string` | **Yes**  |         | Local file path                           |
+| `remote`  | `string` | **Yes**  |         | Remote file path                          |
+| `options` | `object` | No       | `{}`    | [Protocol specific options](protocols.md) |
 
 [▲ Back to top](#client-api)
 

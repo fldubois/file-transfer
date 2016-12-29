@@ -89,7 +89,8 @@ transfer.disposer([protocol], options) -> disposer
 
 ### Client API
 
-See the [Client API reference](docs/client.md)
+* [Client API reference](docs/client.md)
+* [Protocols' specific options and additional methods](docs/protocols.md)
 
 ## License
 
