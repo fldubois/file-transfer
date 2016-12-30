@@ -28,7 +28,7 @@ describe('WebDAV', function () {
   });
 
   before('connect to the server', function () {
-    transfer.connect('webdav', {
+    return transfer.connect('webdav', {
       host:     '127.0.0.1',
       port:     20001,
       username: 'foo',
