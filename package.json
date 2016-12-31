@@ -24,6 +24,7 @@
     "test:unit": "istanbul cover --root 'lib' --include-all-sources true _mocha -- -r test/bootstrap.js --recursive test/unit/specs",
     "test:coverage": "istanbul check-coverage --statements 100 --functions 100 --branches 100 --lines 100",
     "test:integration": "mocha -r test/bootstrap.js --recursive test/integration/specs",
+    "coveralls": "cat ./coverage/lcov.info | coveralls",
     "version": "chlg release $npm_package_version && git add CHANGELOG.md"
   },
   "dependencies": {
@@ -40,6 +41,7 @@
     "chai": "^3.5.0",
     "chai-as-promised": "^6.0.0",
     "chlg-cli": "^1.0.0",
+    "coveralls": "^2.11.15",
     "eslint": "^2.13.1",
     "express": "^4.14.0",
     "ftpd": "^0.2.15",
