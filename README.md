@@ -1,5 +1,11 @@
 # file-transfer
 
+[![npm](https://img.shields.io/npm/v/file-transfer.svg?maxAge=3600)](https://www.npmjs.com/package/file-transfer)
+[![Build Status](https://travis-ci.org/fldubois/file-transfer.svg?branch=master)](https://travis-ci.org/fldubois/file-transfer)
+[![Coverage Status](https://coveralls.io/repos/github/fldubois/file-transfer/badge.svg?branch=master)](https://coveralls.io/github/fldubois/file-transfer?branch=master)
+[![dependencies Status](https://david-dm.org/fldubois/file-transfer/status.svg)](https://david-dm.org/fldubois/file-transfer)
+[![devDependencies Status](https://david-dm.org/fldubois/file-transfer/dev-status.svg)](https://david-dm.org/fldubois/file-transfer?type=dev)
+
 > Multiprotocol file transfer
 
 ## Supported protocols
