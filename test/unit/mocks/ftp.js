@@ -59,7 +59,7 @@ ClientMock.prototype.list = function (directory, callback) {
   }
 
   return callback(null, [
-    {name: path.basename(path.dirname(directory))},
+    {name: path.basename(directory)},
     {name: 'file1'},
     {name: 'file2'},
     {name: 'file3'},
