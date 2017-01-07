@@ -4,20 +4,18 @@ var expect = require('chai').expect;
 
 module.exports = function (instances) {
 
-  describe('Scenario: Read file with a stream', function () {
-
-    var stream = null;
+  describe('Scenario: Stream functions', function () {
 
     before('add files to server', function () {
       instances.server.fs.set('path/to/file.txt', new Buffer('Hello, world !', 'utf8'));
     });
 
-    it('should create a read stream', function (done) {
+    it('should create read stream', function (done) {
       if (!instances.client.supportsStreams()) {
         this.skip();
       }
 
-      stream = instances.client.createReadStream('path/to/file.txt');
+      var stream = instances.client.createReadStream('path/to/file.txt');
 
       var content = '';
 
@@ -35,26 +33,23 @@ module.exports = function (instances) {
       });
     });
 
-    it('should return errors', function (done) {
+    it('should create write stream', function (done) {
       if (!instances.client.supportsStreams()) {
         this.skip();
       }
 
-      stream = instances.client.createReadStream('path/to/missing/file.txt');
+      var filepath = 'path/to/file-new.txt';
 
-      stream.on('data', function () {
-        return done(new Error('Read stream created on missing file'));
-      });
+      var stream = instances.client.createWriteStream(filepath);
 
-      stream.on('error', function (error) {
-        expect(error).to.be.an('error');
+      stream.on('finish', function () {
+        expect(Buffer.isBuffer(instances.server.fs.get(filepath))).to.equal(true);
+        expect(instances.server.fs.get(filepath).toString()).to.equal('Hello, friend.');
 
         return done();
       });
 
-      stream.on('end', function () {
-        return done(new Error('Read stream created on missing file'));
-      });
+      stream.end('Hello, friend.', 'utf8');
     });
 
     after('delete the remote files', function (done) {
